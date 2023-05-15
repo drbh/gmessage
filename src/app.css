@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+	/* Chat Header Section */
+	.cx-header {
+		@apply bg-[color:var(--primary)] px-6 py-4 border-b-[1px] border-[color:var(--primary-light)];
+	}
+
+	.cx-menu-item {
+		@apply bg-[color:var(--primary-light)] hover:bg-[color:var(--primary)] p-4 cursor-pointer;
+	}
+
+	.cx-badge {
+		@apply bg-green-500 absolute text-white text-xs px-[0.35rem] py-[0.35rem] rounded-full border border-[color:var(--primary)] border-[0.30rem] transform translate-x-[1.5rem] translate-y-[1.5rem];
+	}
+
+	.cx-circle {
+		@apply w-10 h-10 rounded-full shadow-lg;
+	}
+
+	.cx-menu {
+		@apply bg-[color:var(--primary-light)] absolute transform -translate-x-[14.75rem] -translate-y-[1.85rem] mt-8 p-4 rounded-md shadow-lg text-sm group-hover:block z-30 w-64;
+	}
+
+	/* Chat Message Section */
+	.cx-chat-container {
+		@apply space-y-4 flex flex-col max-h-[90vh] overflow-y-scroll px-4 pt-4 pb-[6rem];
+	}
+
+	/* Chat Input Section */
+	.cx-chat-input {
+		@apply opacity-[99%] w-full bottom-0 flex items-center bg-[color:var(--primary)] px-4 py-4 mb-2 mx-2 rounded-md;
+	}
+
+	.cx-chat-input-inside {
+		@apply bg-[color:var(--primary-light)] relative flex-grow rounded-[10px] px-4 py-2 shadow-sm min-h-[10px];
+	}
+
+	.cx-chat-input-textarea {
+		@apply bg-[color:var(--primary-light)] mt-1 font-bold w-full h-full outline-none resize-none overflow-hidden min-h-[10px];
+	}
+
+	.cx-chat-send-button {
+		@apply ml-2 bg-[color:var(--primary)] hover:bg-[color:var(--primary-light)] rounded-lg py-3 px-5 font-semibold tracking-wide transition duration-200;
+	}
+
+	/* Sidebar Section */
+	.cx-sidebar {
+		@apply pb-4 w-[360px] min-w-[360px] h-full flex flex-col justify-start bg-[color:var(--primary)] shadow-lg border-r-[1px] border-[color:var(--primary-light)];
+	}
+
+	.cx-search-bar {
+		@apply bg-[color:var(--primary)] px-6 py-4 border-b-[1px] border-[color:var(--primary-light)];
+	}
+
+	.cx-search-bar-inner {
+		@apply flex items-center space-x-4 w-full pt-3 pb-2 bg-[color:var(--light-gray)] rounded-[10px];
+	}
+
+	/* Chat Message Section */
+	.cx-char-action-button {
+		@apply bg-[color:var(--light-transparent)] hover:bg-[color:var(--dark-transparent)] hover:translate-y-[-0.1rem] rounded-full px-3 py-1 transition duration-200;
+	}
+
+	/* Settings Pane */
+	.cx-settings-pane {
+		@apply absolute w-[70vw] h-[80vh] top-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 p-2 bg-[color:var(--primary-light)] rounded-xl shadow-md text-white;
+	}
+}

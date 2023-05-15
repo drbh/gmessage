@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8" />
+	<link rel="icon" href="%sveltekit.assets%/favicon.png" />
+	<meta name="viewport" content="width=device-width" />
+	%sveltekit.head%
+</head>
+
+<body data-sveltekit-preload-data="hover">
+	<div style="display: contents">%sveltekit.body%</div>
+</body>
+
+</html>
+
+
+<style>
+	:root {
+
+		--primary: #000;
+		--primary-light: #0d1116;
+		--secondary: #1f2937;
+		--bright: #f32d8d;
+		--font-color: #fff;
+
+		--bright-two: #f3dc2d;
+		--light-gray: #dddcdc;
+		--light-transparent: rgb(200, 200, 200, 0.1);
+		--dark-transparent: rgb(0, 0, 0, 0.1);
+
+		background-color: var(--primary);
+		color: var(--font-color);
+	}
+
+	.scrollbar-none {
+		-ms-overflow-style: none;
+		/* IE and Edge */
+		scrollbar-width: none;
+		/* Firefox */
+	}
+
+	.scrollbar-none::-webkit-scrollbar {
+		display: none;
+		/* Chrome, Safari, and Opera */
+	}
+</style>
