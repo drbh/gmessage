@@ -36,3 +36,18 @@ There are many UI's and ways to interact with LLM's however they they are a bit 
 - multi user support
 - notes/playground mode
 - RLHF QA mode
+
+
+### Examples
+
+Choose your favorite theme, or add a new one to [./src/themes.ts](src/themes.ts).
+
+![themes](https://github.com/drbh/gmessage/assets/9896130/6083db08-b6dd-463d-925b-0066e4a3cf43)
+
+Search your message history as you type!
+
+![search-messages](https://github.com/drbh/gmessage/assets/9896130/ae150a05-d0f3-4ea2-b2b2-7003f0e58f7c)
+
+Ask the AI questions 100% offline.
+
+![first-chat](https://github.com/drbh/gmessage/assets/9896130/a082d705-a38c-454b-ac67-b94a5c326033)
