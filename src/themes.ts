@@ -1,45 +1,45 @@
 export const APP_THEMES = {
 	Default: {
 		primary: '#000000',
-		primaryLight: '#0d1116',
-		secondary: '#1f2937',
+		primaryLight: '#2c2c2c',
+		secondary: '#585858',
 		bright: '#f32d8d',
 		fontColor: '#FFFFFF'
 	},
 	Light: {
 		primary: '#ffffff',
 		primaryLight: '#f2f2f2',
-		secondary: '#e6e6e6',
+		secondary: '#c4c4c4',
 		bright: '#f32d8d',
-		fontColor: '#000000'
+		fontColor: '#2c2c2c'
 	},
 	'Midnight Blue': {
 		primary: '#011638',
 		primaryLight: '#023059',
 		secondary: '#03477b',
-		bright: '#f05d7e',
-		fontColor: '#000000'
+		bright: '#FFB703',
+		fontColor: '#FFFFFF'
 	},
 	'Vibrant Sea': {
 		primary: '#004643',
 		primaryLight: '#007367',
 		secondary: '#00a08b',
-		bright: '#f0be64',
-		fontColor: '#000000'
+		bright: '#FFB703',
+		fontColor: '#FFFFFF'
 	},
 	'Mellow Green': {
 		primary: '#065143',
 		primaryLight: '#09756d',
 		secondary: '#0ca897',
-		bright: '#f09673',
-		fontColor: '#000000'
+		bright: '#FFB703',
+		fontColor: '#FFFFFF'
 	},
 	'Retro Purple': {
 		primary: '#2d1832',
 		primaryLight: '#5b3064',
 		secondary: '#895c96',
-		bright: '#f07d58',
-		fontColor: '#000000'
+		bright: '#FFB703',
+		fontColor: '#FFFFFF'
 	},
 	'Fresh Citrus': {
 		primary: '#4b3f3b',

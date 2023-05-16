@@ -111,5 +111,10 @@ export async function searchConversations(searchText: string): Promise<ServerMes
 	const data = await response.json();
 	const jsonData = extractJson(data.data);
 
+	// sort by timestamp
+	jsonData.results.sort((a: any, b: any) => {
+		return new Date(b.timestamp) - new Date(a.timestamp);
+	});
+
 	return jsonData.results || [];
 }

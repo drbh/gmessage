@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { EllipsisHorizontal, Icon } from 'svelte-hero-icons';
 	import { onMount } from 'svelte';
+	// @ts-ignore-next-line
 	import { createIcon } from '@download/blockies';
+	import type { Message } from '../chat/types';
 
-	// export let settingsHidden: boolean = false;
 	export let handleSettingsClick: () => void;
 	export let menuIsOpen: boolean = false;
 	export let isHoveringPictures: boolean = false;
-	export let messages = []; // This needs to be provided or fetched from somewhere
-	let downloadLink;
+	export let messages: Message[] = [];
+	let downloadLink: null | HTMLAnchorElement = null;
 
 	onMount(() => {
 		if (downloadLink) {
@@ -33,9 +34,19 @@
 		localStorage.setItem(
 			'chatSessionId',
 			// random int
-			Math.floor(Math.random() * 100000)
+			String(Math.floor(Math.random() * 100000))
 		);
 		window.location.reload();
+	}
+
+	function getProfilePicture() {
+		// check if window exists
+		if (typeof window === 'undefined') return;
+		return createIcon({
+			seed: 'address',
+			size: 8,
+			scale: 16
+		}).toDataURL();
 	}
 </script>
 
@@ -64,22 +75,11 @@
 				>
 					<div class="cursor-pointer">
 						<div class="cx-badge" />
-						<!-- svelte-ignore a11y-missing-attribute -->
 						<img
-							src={
-							typeof window !== 'undefined' &&
-							createIcon({
-								seed: `some-random-string-${
-									localStorage.getItem('chatSessionId') || '0'
-								}`, // seed used to generate icon data, default: random
-								// color: '#dfe', // to manually specify the icon color, default: random
-								// bgcolor: '#aaa', // choose a different background color, default: white
-								size: 15, // width/height of the icon in blocks, default: 10
-								scale: 3 // width/height of each block in pixels, default: 5
-							}).toDataURL()}
+							src={getProfilePicture()}
+							alt="profile"
 							class="cx-circle bg-[color:var(--white)]"
 						/>
-						<!-- <div class="cx-circle rounded-full bg-[color:var(--bright)]" /> -->
 					</div>
 
 					<div

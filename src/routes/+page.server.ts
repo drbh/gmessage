@@ -1,3 +1,6 @@
+const host = 'http://yama';
+const port = 8000;
+
 export const actions = {
 	chatWithBot: async ({ request, locals, middleware, cookies, platform }: any) => {
 		const incoming = await request.formData();
@@ -10,7 +13,7 @@ export const actions = {
 			body: JSON.stringify({ chat_id: chatSessionId, message: userMessage })
 		};
 
-		const response = await fetch('http://localhost:8000/message', options);
+		const response = await fetch(`${host}:${port}/message`, options);
 		const json = await response.json();
 		return JSON.stringify(json);
 	},
@@ -20,7 +23,7 @@ export const actions = {
 
 		const options = { method: 'GET' };
 
-		const response = await fetch(`http://localhost:8000/messages/${chatSessionId}`, options);
+		const response = await fetch(`${host}:${port}/messages/${chatSessionId}`, options);
 		const json = await response.json();
 
 		return JSON.stringify({ messages: json });
@@ -28,7 +31,7 @@ export const actions = {
 	getRecentChatSessions: async ({ request, middleware, cookies, platform }: any) => {
 		const options = { method: 'GET' };
 
-		const response = await fetch('http://localhost:8000/chats', options);
+		const response = await fetch(`${host}:${port}/chats`, options);
 		const json = await response.json();
 
 		return JSON.stringify({ chats: json });
@@ -39,7 +42,7 @@ export const actions = {
 
 		const options = { method: 'GET' };
 
-		const response = await fetch(`http://localhost:8000/search/${searchText}`, options);
+		const response = await fetch(`${host}:${port}/search/${searchText}`, options);
 		const json = await response.json();
 
 		return JSON.stringify({ results: json });
