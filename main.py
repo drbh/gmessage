@@ -9,6 +9,8 @@ import os
 from datetime import datetime, timezone
 from fastapi import HTTPException
 import random
+from fastapi.middleware.cors import CORSMiddleware
+
 
 
 class ChatCompletionConfig(BaseModel):
@@ -70,6 +72,21 @@ CHAT_COMPLETION_CONFIG: ChatCompletionConfig = ChatCompletionConfig()
 DATABASE = "chat_history.db"
 
 app = FastAPI()
+
+# allow cors from http://localhost:5190/
+origins = [
+    "http://localhost:5190",
+    "http://127.0.0.1:8080",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 
 def create_connection():
