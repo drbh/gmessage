@@ -24,12 +24,14 @@ There are many UI's and ways to interact with LLM's however they they are a bit 
 ### Design Goals
 
 - 🐥 Lots of themes!
-- 🐣 Search chat history
-- 🐣 Create, view multiple chats
-- 🐣 Text to speech
-- 🐣 Export chat to JSON file
-- 🥚 Fork chats at specific message
-- 🥚 Rerun chat from specific message
+- 🐥 Python server
+- 🐥 Search chat history
+- 🐥 Create, view multiple chats
+- 🐥 Text to speech
+- 🐥 Export chat to JSON file
+- 🐣 Fork chats at specific message
+- 🐣 Rerun chat from specific message
+- 🐣 Configure mode and chat settings
 - 🥚 Edit and up/down vote messages
 - 🥚 Prompt manager
 - 🥚 Webhook manager
