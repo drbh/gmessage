@@ -1,9 +1,16 @@
 export const APP_THEMES = {
-	Default: {
+	DefaultPink: {
 		primary: '#000000',
 		primaryLight: '#2c2c2c',
 		secondary: '#585858',
 		bright: '#f32d8d',
+		fontColor: '#FFFFFF'
+	},
+	Default: {
+		primary: '#000000',
+		primaryLight: '#2c2c2c',
+		secondary: '#585858',
+		bright: '#147efb',
 		fontColor: '#FFFFFF'
 	},
 	Light: {
@@ -13,12 +20,47 @@ export const APP_THEMES = {
 		bright: '#f32d8d',
 		fontColor: '#2c2c2c'
 	},
-	'Midnight Blue': {
-		primary: '#011638',
-		primaryLight: '#023059',
-		secondary: '#03477b',
-		bright: '#FFB703',
-		fontColor: '#FFFFFF'
+	Blue: {
+		primary: '#ffffff',
+		primaryLight: '#eeeeee',
+		secondary: '#c4c4c4',
+		bright: '#147efb',
+		fontColor: '#2c2c2c'
+	},
+	MidnightBlue: {
+		primary: '#000033',
+		primaryLight: '#000066',
+		secondary: '#000099',
+		bright: '#6699ff',
+		fontColor: '#ffffff'
+	},
+	ForestNight: {
+		primary: '#003300',
+		primaryLight: '#006600',
+		secondary: '#009900',
+		bright: '#66ff99',
+		fontColor: '#ffffff'
+	},
+	RubyTwilight: {
+		primary: '#330000',
+		primaryLight: '#660000',
+		secondary: '#990000',
+		bright: '#ff6699',
+		fontColor: '#ffffff'
+	},
+	OceanAbyss: {
+		primary: '#003333',
+		primaryLight: '#006666',
+		secondary: '#009999',
+		bright: '#66ffff',
+		fontColor: '#ffffff'
+	},
+	LunarEclipse: {
+		primary: '#333333',
+		primaryLight: '#666666',
+		secondary: '#999999',
+		bright: '#ffcc00',
+		fontColor: '#ffffff'
 	},
 	'Vibrant Sea': {
 		primary: '#004643',

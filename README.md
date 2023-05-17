@@ -9,8 +9,12 @@ Status: 🐣 (needs bug fixes and stabilization of core features, most happy pat
 ## Running the project
 
 ```bash
+# app
 pnpm i
 pnpm run dev --port 5190
+
+# server
+uvicorn main:app --reload
 ```
 
 ### Why?

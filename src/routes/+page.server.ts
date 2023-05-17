@@ -1,4 +1,5 @@
-const host = 'http://yama';
+// const host = 'http://yama';
+const host = 'http://localhost';
 const port = 8000;
 
 export const actions = {
@@ -46,6 +47,64 @@ export const actions = {
 		const json = await response.json();
 
 		return JSON.stringify({ results: json });
+	},
+	getSupportedModels: async ({ request, middleware, cookies, platform }: any) => {
+		const options = { method: 'GET' };
+		const response = await fetch(`${host}:${port}/supported-models`, options);
+		const json = await response.json();
+		return JSON.stringify({ results: json });
+	},
+	updateModelConfig: async ({ request, middleware, cookies, platform }: any) => {
+		const incoming = await request.formData();
+		const modelConfig = incoming.get('modelConfig');
+		const options = {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: modelConfig
+		};
+		const response = await fetch(`${host}:${port}/model-config`, options);
+		const json = await response.json();
+		return JSON.stringify({ results: json });
+	},
+	updateCompletionConfig: async ({ request, middleware, cookies, platform }: any) => {
+		const incoming = await request.formData();
+		const completionConfig = incoming.get('completionConfig');
+		const options = {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: completionConfig
+		};
+		const response = await fetch(`${host}:${port}/chat-completion-config`, options);
+		const json = await response.json();
+		return JSON.stringify({ results: json });
+	},
+	getCompletionConfig: async ({ request, middleware, cookies, platform }: any) => {
+		const options = { method: 'GET' };
+		const response = await fetch(`${host}:${port}/chat-completion-config`, options);
+		const json = await response.json();
+		return JSON.stringify({ results: json });
+	},
+	getModelConfig: async ({ request, middleware, cookies, platform }: any) => {
+		const options = { method: 'GET' };
+		const response = await fetch(`${host}:${port}/model-config`, options);
+		const json = await response.json();
+		return JSON.stringify({ results: json });
+	},
+	forkConversationAtMessage: async ({ request, middleware, cookies, platform }: any) => {
+		const incoming = await request.formData();
+		const messageId = incoming.get('messageId');
+		const options = { method: 'POST' };
+		const response = await fetch(`${host}:${port}/fork-conversation/${messageId}`, options);
+		const json = await response.json();
+		return JSON.stringify({ messages: json });
+	},
+	rerunModelFromMessage: async ({ request, middleware, cookies, platform }: any) => {
+		const incoming = await request.formData();
+		const messageId = incoming.get('messageId');
+		const options = { method: 'POST' };
+		const response = await fetch(`${host}:${port}/rerun-conversation/${messageId}`, options);
+		const json = await response.json();
+		return JSON.stringify({ messages: json });
 	}
 };
 

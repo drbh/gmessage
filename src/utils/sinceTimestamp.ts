@@ -1,7 +1,10 @@
 export const sinceTimestamp = (timestamp: any) => {
-	// get time since 2023-05-15 05:02:04
-	const currentTimestampUTC = new Date().getTime() // + new Date().getTimezoneOffset() * 60000;
-	const sinceLastSeen = currentTimestampUTC - new Date(timestamp + 'Z').getTime();
+	return timeDiffToHuman(new Date().getTime(), new Date(timestamp + 'Z').getTime());
+};
+
+export const timeDiffToHuman = (timestampA: any, timestampB: any) => {
+	const currentTimestampUTC = timestampA;
+	const sinceLastSeen = currentTimestampUTC - timestampB;
 	const secondsSinceLastSeen = Math.floor(sinceLastSeen / 1000);
 	const minutesSinceLastSeen = Math.floor(secondsSinceLastSeen / 60);
 	const hoursSinceLastSeen = Math.floor(minutesSinceLastSeen / 60);
@@ -9,13 +12,13 @@ export const sinceTimestamp = (timestamp: any) => {
 
 	let lastSeen = '';
 	if (daysSinceLastSeen > 0) {
-		lastSeen = `${daysSinceLastSeen} days ago`;
+		lastSeen = `${daysSinceLastSeen} days`;
 	} else if (hoursSinceLastSeen > 0) {
-		lastSeen = `${hoursSinceLastSeen} hours ago`;
+		lastSeen = `${hoursSinceLastSeen} hours`;
 	} else if (minutesSinceLastSeen > 0) {
-		lastSeen = `${minutesSinceLastSeen} minutes ago`;
+		lastSeen = `${minutesSinceLastSeen} minutes`;
 	} else {
-		lastSeen = `${secondsSinceLastSeen} seconds ago`;
+		lastSeen = `${secondsSinceLastSeen} seconds`;
 	}
 	return lastSeen;
 };

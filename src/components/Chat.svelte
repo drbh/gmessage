@@ -2,11 +2,16 @@
 	import { afterUpdate, onMount } from 'svelte';
 	import { Icon, XCircle } from 'svelte-hero-icons';
 	import { v4 as uuidv4 } from 'uuid';
-	import { sendMessageToServer } from '../chat/api';
+	import {
+		sendMessageToServer,
+		getSupportedModels,
+		getCompletionConfig,
+		getModelConfig
+	} from '../chat/api';
 	import { convertMessage, scrollToBottom } from '../chat/helpers';
-	import ChatHeader from './ChatHeader.svelte';
-	import ChatInput from './ChatInput.svelte';
-	import ChatMessages from './ChatMessages.svelte';
+	import ChatHeader from './Chat/ChatHeader.svelte';
+	import ChatInput from './Chat/ChatInput.svelte';
+	import ChatMessages from './Chat/ChatMessages.svelte';
 
 	// TODO fix context name
 	import { getany } from '../routes/context';
@@ -24,6 +29,25 @@
 	let isHoveringPictures = false;
 	let settingsHidden = true;
 	let themes = APP_THEMES as any[];
+	let supportedModels: any[] = [];
+	let completionConfig: any = {};
+	let initModelConfig: any = {};
+
+	onMount(() => {
+		if (!window) return;
+
+		getSupportedModels().then((models) => {
+			supportedModels = models;
+		});
+
+		getCompletionConfig().then((config) => {
+			completionConfig = config;
+		});
+
+		getModelConfig().then((modelConfig) => {
+			initModelConfig = modelConfig;
+		});
+	});
 
 	onMount(() => {
 		// close jobPostingOptionsVisible if the user clicks outside of the menu
@@ -167,4 +191,12 @@
 	class:hidden={settingsHidden}
 />
 
-<Settings {chatSessionId} bind:settingsHidden {setTheme} {themes} />
+<Settings
+	{chatSessionId}
+	bind:settingsHidden
+	{setTheme}
+	{themes}
+	bind:supportedModels
+	bind:completionConfig
+	bind:initModelConfig
+/>

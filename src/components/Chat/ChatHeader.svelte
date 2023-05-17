@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 	// @ts-ignore-next-line
 	import { createIcon } from '@download/blockies';
-	import type { Message } from '../chat/types';
+	import type { Message } from '../../chat/types';
 
 	export let handleSettingsClick: () => void;
 	export let menuIsOpen: boolean = false;
@@ -90,7 +90,7 @@
 						} transition-transform duration-400`}
 					>
 						<div class="cx-badge" />
-						<div class="cx-circle bg-[color:var(--bright-two)]" />
+						<div class="cx-circle bg-[color:var(--bright)]" />
 					</div>
 				</div>
 			</div>

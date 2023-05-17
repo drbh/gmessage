@@ -18,6 +18,7 @@ export function convertMessage(message: any, index: number): Message {
 		content: message.content,
 		timestamp: shortTime(message.createdAt ?? null),
 		stage: message.stage ?? null,
+		...message
 	};
 }
 

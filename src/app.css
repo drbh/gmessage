@@ -52,7 +52,7 @@
 	}
 
 	.cx-search-bar {
-		@apply bg-[color:var(--primary)] px-6 py-4 border-b-[1px] border-[color:var(--primary-light)];
+		@apply flex bg-[color:var(--primary)] px-6 py-4 border-b-[1px] border-[color:var(--primary-light)];
 	}
 
 	.cx-search-bar-inner {
@@ -66,16 +66,36 @@
 
 	/* Settings Pane */
 	.cx-settings-pane {
-		@apply absolute w-[70vw] h-[80vh] top-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 p-2 bg-[color:var(--primary-light)] rounded-xl shadow-md text-white;
+		@apply absolute w-[70vw] h-[70vh] top-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 bg-[color:var(--primary-light)] rounded-lg shadow-md text-white;
+	}
+
+	.cx-settings-header {
+		@apply flex justify-between items-start w-[100%] border-b-[0.5px] border-[color:var(--primary)] bg-[color:var(--dark-transparent)] p-4 h-[60px];
+	}
+
+	.cx-settings-sidebar {
+		@apply bg-[color:var(--dark-transparent)] h-full flex flex-col w-[200px] space-y-2 border-r-[0.5px] border-[color:var(--primary)] cursor-pointer;
+	}
+
+	.cx-settings-panel {
+		@apply h-full bg-[color:var(--dark-transparent)] shadow-md rounded px-8 pt-6 pb-8;
+	}
+
+	.cx-settings-input {
+		@apply bg-[color:var(--primary-light)] text-[color:var(--font-color)] shadow appearance-none border border-[color:var(--primary)] rounded w-full py-2 px-3 leading-tight focus:outline-none;
+	}
+
+	.cx-settings-button {
+		@apply mt-4 bg-[color:var(--light-transparent)] hover:bg-[color:var(--dark-transparent)] text-white font-bold py-2 px-4 rounded focus:outline-none;
 	}
 
 	/* Recents Section */
 	.cx-recent-conversation {
-		@apply flex items-center space-x-4 w-full p-8 cursor-pointer hover:pl-9 transition-all duration-200 hover:bg-[color:var(--primary-light)];
+		@apply flex items-center space-x-4 w-full p-4 cursor-pointer hover:pl-6 transition-all duration-200 hover:bg-[color:var(--primary-light)] border-b-[1px] border-[color:var(--primary-light)];
 	}
 
 	/* Search Results Section */
 	.cx-search-results {
-		@apply flex items-start space-x-4 w-full p-8 pl-2 cursor-pointer hover:pl-4 transition-all duration-200 hover:bg-[color:var(--primary-light)];
+		@apply flex items-start space-x-4 w-full p-4 pl-2 cursor-pointer hover:pl-6 transition-all duration-200 hover:bg-[color:var(--primary-light)];
 	}
 }

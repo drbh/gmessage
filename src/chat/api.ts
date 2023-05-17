@@ -101,7 +101,6 @@ export async function searchConversations(searchText: string): Promise<ServerMes
 	const formData = new FormData();
 	formData.append('searchText', searchText);
 
-	// send request
 	const response = await fetch('?/searchConversations', {
 		method: 'POST',
 		body: formData
@@ -117,4 +116,87 @@ export async function searchConversations(searchText: string): Promise<ServerMes
 	});
 
 	return jsonData.results || [];
+}
+
+export async function getSupportedModels(): Promise<any> {
+	const response = await fetch('?/getSupportedModels', {
+		method: 'POST',
+		body: ''
+	});
+	const data = await response.json();
+	const jsonData = extractJson(data.data);
+	return jsonData.results || [];
+}
+
+export async function updateModelConfig(modelConfig: any): Promise<any> {
+	const formData = new FormData();
+	formData.append('modelConfig', JSON.stringify(modelConfig));
+	const response = await fetch('?/updateModelConfig', {
+		method: 'POST',
+		body: formData
+	});
+	const data = await response.json();
+	const jsonData = extractJson(data.data);
+	return jsonData.results || [];
+}
+
+export async function updateChatCompletionConfig(chatCompletionConfig: any): Promise<any> {
+	const formData = new FormData();
+	formData.append('completionConfig', JSON.stringify(chatCompletionConfig));
+	const response = await fetch('?/updateCompletionConfig', {
+		method: 'POST',
+		body: formData
+	});
+	const data = await response.json();
+	const jsonData = extractJson(data.data);
+	return jsonData.results || [];
+}
+
+export async function getCompletionConfig(): Promise<any> {
+	const response = await fetch('?/getCompletionConfig', {
+		method: 'POST',
+		body: ''
+	});
+	const data = await response.json();
+	const jsonData = extractJson(data.data);
+	return jsonData.results || [];
+}
+
+export async function getModelConfig(): Promise<any> {
+	const response = await fetch('?/getModelConfig', {
+		method: 'POST',
+		body: ''
+	});
+	const data = await response.json();
+	const jsonData = extractJson(data.data);
+	return jsonData.results || [];
+}
+
+export async function forkConversationAtMessage(
+	messageId: string
+): Promise<{ chatSessionId: string; timelineId: string; messages: ServerMessage[] }> {
+	const formData = new FormData();
+	formData.append('messageId', messageId);
+	const response = await fetch('?/forkConversationAtMessage', {
+		method: 'POST',
+		body: formData
+	});
+	const data = await response.json();
+	const jsonData = extractJson(data.data);
+	return jsonData.messages || [];
+}
+
+// rerun the model from a given message
+export async function rerunModelFromMessage(
+	messageId: string
+): Promise<{ chatSessionId: string; timelineId: string; messages: ServerMessage[] }> {
+	const formData = new FormData();
+	formData.append('messageId', messageId);
+	const response = await fetch('?/rerunModelFromMessage', {
+		method: 'POST',
+		body: formData
+	});
+	const data = await response.json();
+	const jsonData = extractJson(data.data);
+	return jsonData.messages || [];
 }
