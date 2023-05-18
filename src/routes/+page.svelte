@@ -2,7 +2,7 @@
 	import Chat from '../components/Chat.svelte';
 	import Sidebar from '../components/Sidebar.svelte';
 
-	import { getCurrentChatSession, sendMessageToServer, startChatSession } from '../chat/api';
+	import { getCurrentChatSession, sendMessageToServer } from '../chat/api';
 	import { convertMessage, scrollToBottom } from '../chat/helpers';
 	import { onMount } from 'svelte';
 	import { getRecentChatSessions } from '../chat/api';

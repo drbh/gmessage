@@ -1,5 +1,5 @@
 export const sinceTimestamp = (timestamp: any) => {
-	return timeDiffToHuman(new Date().getTime(), new Date(timestamp + 'Z').getTime());
+	return timeDiffToHuman(new Date().getTime(), new Date(timestamp).getTime());
 };
 
 export const timeDiffToHuman = (timestampA: any, timestampB: any) => {

@@ -1,6 +1,7 @@
 import type { ServerMessage } from './types';
 
 const host = 'http://localhost';
+// const port = 3000;
 const port = 8000;
 
 const extractJson = (data: string) => JSON.parse(JSON.parse(data)[0]);
@@ -12,12 +13,13 @@ export async function sendMessageToServer(
 	const options = {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ chat_id: chatSessionId, message: userMessage })
+		body: JSON.stringify({ chat_id: Number(chatSessionId), message: userMessage })
 	};
 	const response = await fetch(`${host}:${port}/message`, options);
 	const json = await response.json();
 	console.log('json', json);
-	return json.messages || [];
+	if (json.messages) return json.messages;
+	return json || [];
 }
 
 export async function getCurrentChatSession(chatSessionId: string): Promise<ServerMessage[]> {

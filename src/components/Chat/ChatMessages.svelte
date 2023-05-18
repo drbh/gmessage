@@ -74,7 +74,10 @@
 		{:else}
 			{#each messages.slice(3) as message, index}
 				{#if // current message is sent by the user
-				new Date(message?.timestamp || 0 + 'Z').getMinutes() - new Date(messages[index + 3 - 1]?.timestamp || 0 + 'Z').getMinutes() >= 1}
+				new Date(
+					message?.timestamp || 0 
+					//+ 'Z'
+					).getMinutes() - new Date(messages[index + 3 - 1]?.timestamp || 0).getMinutes() >= 1}
 					<div
 						class="
 						flex
@@ -87,7 +90,7 @@
 						font-[400]
 						"
 					>
-						{new Date(message.timestamp + 'Z').toLocaleString('en-US', {
+						{new Date(message.timestamp ).toLocaleString('en-US', {
 							weekday: 'long',
 							year: 'numeric',
 							month: 'long',
@@ -128,8 +131,8 @@
 							<p class="mt-1">
 								{#if message.type !== 'sent'}
 									{timeDiffToHuman(
-										new Date(message.timestamp + 'Z').getTime(),
-										new Date(message.request_timestamp + 'Z').getTime()
+										new Date(message.timestamp).getTime(),
+										new Date(message.request_timestamp).getTime()
 									)} |
 								{/if}
 								<!--  -->
@@ -138,8 +141,8 @@
 								{#if message.type !== 'sent'}
 									| {(
 										(message.content.split(' ').length /
-											(new Date(message.timestamp + 'Z').getTime() -
-												new Date(message.request_timestamp + 'Z').getTime())) *
+											(new Date(message.timestamp).getTime() -
+												new Date(message.request_timestamp).getTime())) *
 										1000
 									).toFixed(2)}/wps
 								{/if}

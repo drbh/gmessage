@@ -13,7 +13,7 @@
 		theme = saved || 'Default';
 
 		// // split into 4 hex values
-		const { primary, primaryLight, secondary, bright, fontColor } = APP_THEMES[theme];
+		const { primary, primaryLight, secondary, bright, fontColor } = (APP_THEMES as any)[theme];
 
 		// // set css variables
 		document.documentElement.style.setProperty('--primary', primary);
@@ -29,7 +29,7 @@
 
 	function setTheme(value: any) {
 		// // split into 4 hex values
-		const { primary, primaryLight, secondary, bright, fontColor } = APP_THEMES[value];
+		const { primary, primaryLight, secondary, bright, fontColor } = (APP_THEMES as any)[value];
 
 		// // set css variables
 		document.documentElement.style.setProperty('--primary', primary);
