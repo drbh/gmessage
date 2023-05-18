@@ -1,0 +1,3 @@
+[submodule "server/vendors"]
+	path = server/vendors
+	url = https://github.com/nomic-ai/gpt4all.git

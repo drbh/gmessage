@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -127,10 +128,18 @@ func main() {
 		panic(err)
 	}
 
-	threads := 1
-	model := "../../../Desktop/wizard/wizardLM-7B.ggml.q4_2.bin"
+	// read -m flag
 
-	l, err := gpt4all.New(model, gpt4all.SetModelType(gpt4all.LLaMAType), gpt4all.SetThreads(threads))
+	args := os.Args[1:]
+	if len(args) > 0 {
+		model := args[0]
+		MODEL_CONFIG.Model = model
+	}
+
+	threads := 1
+	model := "./ggml-mpt-7b-chat.bin"
+
+	l, err := gpt4all.New(model, gpt4all.SetModelType(gpt4all.MPTType), gpt4all.SetThreads(threads))
 
 	defer l.Free()
 
@@ -555,7 +564,13 @@ func main() {
 		}
 	}()
 
-	menuApp := true
+	// read from cli args
+	menuApp := false
+	if len(os.Args) > 1 {
+		if os.Args[1] == "menu" {
+			menuApp = true
+		}
+	}
 
 	if menuApp {
 		onExit := func() {
