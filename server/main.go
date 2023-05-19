@@ -102,8 +102,54 @@ var CHAT_COMPLETION_CONFIG = ChatCompletionConfig{
 }
 
 const (
-	PORT = "10999"
+	PORT  = "10999"
+	DB    = "./server/database.db"
+	MODEL = ".cache/gpt4all/ggml-mpt-7b-chat.bin"
 )
+
+type ChatMessage struct {
+	Role    string
+	Content string
+}
+
+func buildPrompt(messages []ChatMessage, defaultPromptHeader bool, defaultPromptFooter bool) string {
+	fullPrompt := ""
+	for _, message := range messages {
+		if message.Role == "system" {
+			systemMessage := message.Content + "\n"
+			fullPrompt += systemMessage
+		}
+	}
+
+	if defaultPromptHeader {
+		fullPrompt += `### Instruction: 
+The prompt below is a question to answer, a task to complete, or a conversation 
+to respond to; decide which and write an appropriate response.
+
+### Prompt: `
+	}
+
+	for _, message := range messages {
+		if message.Role == "user" {
+			userMessage := "\n" + message.Content
+			fullPrompt += userMessage
+		}
+		if message.Role == "assistant" {
+			assistantMessage := `
+### Response:
+` + message.Content
+			fullPrompt += assistantMessage
+		}
+	}
+
+	if defaultPromptFooter {
+		fullPrompt += `
+### Response:
+`
+	}
+
+	return fullPrompt
+}
 
 func main() {
 	app := fiber.New()
@@ -114,7 +160,7 @@ func main() {
 
 	// connect to the database
 	var err error
-	db, err = sql.Open("sqlite3", "./server/database.db")
+	db, err = sql.Open("sqlite3", DB)
 	if err != nil {
 		panic(err)
 	}
@@ -132,8 +178,6 @@ func main() {
 		panic(err)
 	}
 
-	// read -m flag
-
 	args := os.Args[1:]
 	if len(args) > 0 {
 		model := args[0]
@@ -141,9 +185,18 @@ func main() {
 	}
 
 	threads := 1
-	model := "./server/ggml-mpt-7b-chat.bin"
 
-	l, err := gpt4all.New(model, gpt4all.SetModelType(gpt4all.MPTType), gpt4all.SetThreads(threads))
+	home, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+
+	model := home + "/" + MODEL
+
+	l, err := gpt4all.New(model,
+		gpt4all.SetModelType(gpt4all.MPTType),
+		// gpt4all.SetModelType(gpt4all.LLaMAType),
+		gpt4all.SetThreads(threads))
 
 	defer l.Free()
 
@@ -249,8 +302,29 @@ func main() {
 			}
 		}
 
-		// build prompt
-		prompt := "Question:\n" + input.Message + "\nAnswer:\n"
+		// get all of the messages for the chat
+		chatRows, err := db.Query("SELECT role, content FROM messages WHERE chat_id = ?", input.ChatID)
+		if err != nil {
+			panic(err)
+		}
+
+		// build chatMessages from rows
+		chatMessages := []ChatMessage{}
+		for chatRows.Next() {
+			var role string
+			var content string
+			err = chatRows.Scan(&role, &content)
+			if err != nil {
+				panic(err)
+			}
+
+			chatMessages = append(chatMessages, ChatMessage{
+				Role:    role,
+				Content: content,
+			})
+		}
+
+		prompt := buildPrompt(chatMessages, true, true)
 
 		l.SetTokenCallback(func(s string) bool {
 			fmt.Print(s) // show output
@@ -344,8 +418,29 @@ func main() {
 			}
 		}
 
-		// build prompt
-		prompt := "Question:\n" + input.Message + "\nAnswer:\n"
+		// get all of the messages for the chat
+		chatRows, err := db.Query("SELECT role, content FROM messages WHERE chat_id = ?", input.ChatID)
+		if err != nil {
+			panic(err)
+		}
+
+		// build chatMessages from rows
+		chatMessages := []ChatMessage{}
+		for chatRows.Next() {
+			var role string
+			var content string
+			err = chatRows.Scan(&role, &content)
+			if err != nil {
+				panic(err)
+			}
+
+			chatMessages = append(chatMessages, ChatMessage{
+				Role:    role,
+				Content: content,
+			})
+		}
+
+		prompt := buildPrompt(chatMessages, true, true)
 
 		c.Set(fiber.HeaderContentType, "text/event-stream")
 		c.Set(fiber.HeaderCacheControl, "no-cache")

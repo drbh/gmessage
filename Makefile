@@ -1,14 +1,17 @@
+.PHONY: run pnpm install compile backend
 
 run: pnpm install compile backend
 
 pnpm:
-	curl -fsSL https://get.pnpm.io/install.sh | sh -
+	@if ! command -v pnpm &> /dev/null; then \
+		curl -fsSL https://get.pnpm.io/install.sh | sh -; \
+	fi
 
-install:
+install: pnpm
 	pnpm install
 
-compile:
+compile: install
 	pnpm build
 
-backend:
+backend: compile
 	cd server && make

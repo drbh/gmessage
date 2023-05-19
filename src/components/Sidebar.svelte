@@ -7,6 +7,7 @@
 
 	export let recentConversations: any[] = [];
 	export let resetWithChatSessionId: () => void;
+	export let messageCount: number;
 
 	let searchTerm = '';
 	let seachResults: any[] = [];
@@ -22,6 +23,13 @@
 			String(Math.floor(Math.random() * 100000))
 		);
 		window.location.reload();
+	}
+	
+	let showNewConvo = false;
+	$: {
+		if (messageCount === 4) {
+			showNewConvo = true;
+		}
 	}
 </script>
 
@@ -142,16 +150,48 @@
 				</div>
 			{/each}
 			{#if searchTerm.length == 0}
-				<!-- svelte-ignore a11y-click-events-have-key-events -->
-				<div on:click={() => {}} class="cx-recent-conversation">
-					<div
-						class="flex w-full h-10 items-center justify-center text-gray-900
+
+				{#if messageCount == 0}
+					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<div on:click={() => {}} class="cx-recent-conversation">
+						<div
+							class="flex w-full h-10 items-center justify-center text-gray-900
 					bg-[color:var(--primary-light)] rounded-md
 					animate animate-pulse
 					transistion-all duration-300 ease-in-out
 					"
-					/>
-				</div>
+						/>
+					</div>
+				{/if}
+
+				{#if showNewConvo}
+					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<div on:click={() => {}} class="cx-recent-conversation">
+						<!-- svelte-ignore a11y-missing-attribute -->
+						<img
+							src={createIcon({
+								seed: `some-random-string-${'0'}`, // seed used to generate icon data, default: random
+								// color: '#dfe', // to manually specify the icon color, default: random
+								// bgcolor: '#aaa', // choose a different background color, default: white
+								size: 15, // width/height of the icon in blocks, default: 10
+								scale: 3 // width/height of each block in pixels, default: 5
+							}).toDataURL()}
+							class="w-10 h-10 bg-[color:var(--white)] rounded-full opacity-50"
+						/>
+						<div class="flex flex-col w-[calc(100%-4rem)]">
+							<div class="flex items-center justify-between w-full">
+								<!-- <div></div> -->
+								<div class="text-[color:var(--white)] text-sm">{'New Conversation Started'}</div>
+								<div class="text-[color:var(--white)] text-xs">{'now'}</div>
+							</div>
+							<div
+								class="text-[color:var(--white)] text-sm overflow-hidden overflow-ellipsis whitespace-nowrap w-full"
+							>
+								{'...'}
+							</div>
+						</div>
+					</div>
+				{/if}
 
 				<!-- for each recentConversations -->
 				{#each recentConversations as conversation}

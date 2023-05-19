@@ -1,13 +1,15 @@
 export INCLUDE_PATH := $(shell pwd)/vendors/gpt4all-bindings/golang
+export MODEL_NAME := ggml-mpt-7b-chat.bin
 
 # ⭐️ ENTRY POINT FROM README THIS RUNS ALL OF THE COMMANDS BELOW
 run: submodule lib check build
 
-# check if the model is downloaded if not download it
+# Check if the model is downloaded; if not, download it
 check:
-	@if [ ! -f "ggml-mpt-7b-chat.bin" ]; then \
-		echo "Need to download from https://gpt4all.io/models/ggml-mpt-7b-chat.bin"; \
-		curl -LO https://gpt4all.io/models/ggml-mpt-7b-chat.bin; \
+	@if [ ! -f "$(HOME)/.cache/gpt4all/$(MODEL_NAME)" ]; then \
+		echo "Need to download from https://gpt4all.io/models/$(MODEL_NAME)"; \
+		mkdir -p "$(HOME)/.cache/gpt4all"; \
+		curl -LO https://gpt4all.io/models/$(MODEL_NAME) -o "$(HOME)/.cache/gpt4all/$(MODEL_NAME)"; \
 		echo "🌈 Downloaded"; \
 		exit 0; \
 	else \

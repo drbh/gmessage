@@ -49,9 +49,16 @@
 			});
 		}
 	};
+
+	let messageCount = 0;
+
+	// reactive messageCount length
+	$: {
+		messageCount = messages.length;
+	}
 </script>
 
 <div class="flex absolute left-0 top-0 w-full h-full overflow-hidden">
-	<Sidebar {recentConversations} {resetWithChatSessionId} />
-	<Chat {messages} />
+	<Sidebar {recentConversations} {resetWithChatSessionId} {messageCount} />
+	<Chat bind:messages />
 </div>
