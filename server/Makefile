@@ -39,4 +39,4 @@ menu:
 
 # build the standalone app
 build:
-	@C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go build -o gmessage main.go
+	@C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go build -o ../gmessage main.go

@@ -2,10 +2,14 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -103,7 +107,7 @@ var CHAT_COMPLETION_CONFIG = ChatCompletionConfig{
 
 const (
 	PORT  = "10999"
-	DB    = "./server/database.db"
+	DB    = ".cache/gmessage/database.db"
 	MODEL = ".cache/gpt4all/ggml-mpt-7b-chat.bin"
 )
 
@@ -152,15 +156,34 @@ to respond to; decide which and write an appropriate response.
 }
 
 func main() {
+
+	if len(os.Args) > 1 {
+		fmt.Println("Opening browser", os.Args[1])
+		standalone()
+		return
+	}
+
 	app := fiber.New()
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "http://localhost:5190, http://127.0.0.1:8080",
 		AllowCredentials: true,
 	}))
 
+	home, homeErr := os.UserHomeDir()
+	if homeErr != nil {
+		panic(homeErr)
+	}
+
+	dbPath := home + "/" + DB
+
+	// make sure that .cache/gmessage exists
+	os.MkdirAll(home+"/.cache/gmessage", os.ModePerm)
+
+	fmt.Println("Database path:", dbPath)
+
 	// connect to the database
 	var err error
-	db, err = sql.Open("sqlite3", DB)
+	db, err = sql.Open("sqlite3", dbPath)
 	if err != nil {
 		panic(err)
 	}
@@ -185,11 +208,6 @@ func main() {
 	}
 
 	threads := 1
-
-	home, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
 
 	model := home + "/" + MODEL
 
@@ -652,10 +670,9 @@ func main() {
 		return c.SendString("Message updated successfully.")
 	})
 
-	// serve static files in ../build
-	app.Static("/", "build")
+	app.Static("/", "web/build")
 
-	// Start the Fiber server in a separate goroutine
+	// always start server in background
 	go func() {
 		err := app.Listen(":" + PORT)
 		if err != nil {
@@ -663,25 +680,13 @@ func main() {
 		}
 	}()
 
-	// read from cli args
-	menuApp := false
-	if len(os.Args) > 1 {
-		if os.Args[1] == "menu" {
-			menuApp = true
-		}
+	onExit := func() {
+		fmt.Println("Exited")
 	}
 
-	if menuApp {
-		onExit := func() {
-			fmt.Println("Exited")
-		}
+	// always start menu app
+	systray.Run(onReady, onExit)
 
-		systray.Run(onReady, onExit)
-	} else {
-
-		standalone()
-	}
-	// Wait for the webview app to exit
 	app.Shutdown()
 
 }
@@ -704,12 +709,31 @@ func onReady() {
 	systray.SetTitle("gmessage - Live")
 	systray.SetTooltip("Server running on " + serverHost + ":" + PORT)
 
-	mOpenUI := systray.AddMenuItem("Open UI", "Open the application interface")
+	mOpenUI := systray.AddMenuItem("Open In Browser", "Open the application interface")
+	mOpenApp := systray.AddMenuItem("Open Desktop App", "Open the application interface")
 	mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
 
 	go func() {
 		for {
 			select {
+			case <-mOpenApp.ClickedCh:
+				pwd, err := os.Getwd()
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				cmd := exec.Command(filepath.Join(pwd, "gmessage"), "standalone")
+
+				var out bytes.Buffer
+				cmd.Stdout = &out
+
+				err = cmd.Run()
+
+				if err != nil {
+					fmt.Printf("translated phrase: %q\n", out.String())
+					log.Fatal(err)
+				}
+
 			case <-mOpenUI.ClickedCh:
 				open.Run("http://" + serverHost + ":" + PORT)
 			case <-mQuit.ClickedCh:

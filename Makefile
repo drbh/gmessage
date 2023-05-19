@@ -8,12 +8,12 @@ pnpm:
 	fi
 
 install: pnpm
-	pnpm install
+	cd web && pnpm install
 
 compile: build.flag
 
 build.flag: $(shell find src -type f)
-	pnpm build
+	cd web && pnpm build
 	touch build.flag
 
 backend: compile

@@ -13,3 +13,5 @@ vite.config.ts.timestamp-*
 gmessage
 *.bin
 build.flag
+__pycache__
+web/build
