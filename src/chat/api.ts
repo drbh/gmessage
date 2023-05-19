@@ -1,8 +1,17 @@
 import type { ServerMessage } from './types';
 
-const host = 'http://localhost';
+let protocol = 'http';
+let host = 'localhost';
+let port = 8000;
+
+// if window get the host and port from the window location
+if (typeof window !== 'undefined') {
+	protocol = window.location.protocol.slice(0, -1) + '://';
+	host = window.location.hostname;
+	port = Number(window.location.port);
+}
+
 // const port = 3000;
-const port = 8000;
 
 const extractJson = (data: string) => JSON.parse(JSON.parse(data)[0]);
 
@@ -15,7 +24,7 @@ export async function sendMessageToServer(
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ chat_id: Number(chatSessionId), message: userMessage })
 	};
-	const response = await fetch(`${host}:${port}/message`, options);
+	const response = await fetch(`${protocol}${host}:${port}/message`, options);
 	const json = await response.json();
 	console.log('json', json);
 	if (json.messages) return json.messages;
@@ -24,14 +33,14 @@ export async function sendMessageToServer(
 
 export async function getCurrentChatSession(chatSessionId: string): Promise<ServerMessage[]> {
 	const options = { method: 'GET' };
-	const response = await fetch(`${host}:${port}/messages/${chatSessionId}`, options);
+	const response = await fetch(`${protocol}${host}:${port}/messages/${chatSessionId}`, options);
 	const json = await response.json();
 	return json;
 }
 
 export async function getRecentChatSessions(): Promise<ServerMessage[]> {
 	const options = { method: 'GET' };
-	const response = await fetch(`${host}:${port}/chats`, options);
+	const response = await fetch(`${protocol}${host}:${port}/chats`, options);
 	const jsonData = await response.json();
 	jsonData.sort((a: any, b: any) => {
 		return new Date(b.timestamp) - new Date(a.timestamp);
@@ -41,7 +50,7 @@ export async function getRecentChatSessions(): Promise<ServerMessage[]> {
 
 export async function searchConversations(searchText: string): Promise<ServerMessage[]> {
 	const options = { method: 'GET' };
-	const response = await fetch(`${host}:${port}/search/${searchText}`, options);
+	const response = await fetch(`${protocol}${host}:${port}/search/${searchText}`, options);
 	const jsonData = await response.json();
 	jsonData.sort((a: any, b: any) => {
 		return new Date(b.timestamp) - new Date(a.timestamp);
@@ -51,7 +60,7 @@ export async function searchConversations(searchText: string): Promise<ServerMes
 
 export async function getSupportedModels(): Promise<any> {
 	const options = { method: 'GET' };
-	const response = await fetch(`${host}:${port}/supported-models`, options);
+	const response = await fetch(`${protocol}${host}:${port}/supported-models`, options);
 	const json = await response.json();
 	return json || [];
 }
@@ -62,7 +71,7 @@ export async function updateModelConfig(modelConfig: any): Promise<any> {
 		headers: { 'Content-Type': 'application/json' },
 		body: modelConfig
 	};
-	const response = await fetch(`${host}:${port}/model-config`, options);
+	const response = await fetch(`${protocol}${host}:${port}/model-config`, options);
 	const json = await response.json();
 	return json;
 }
@@ -73,21 +82,21 @@ export async function updateChatCompletionConfig(chatCompletionConfig: any): Pro
 		headers: { 'Content-Type': 'application/json' },
 		body: chatCompletionConfig
 	};
-	const response = await fetch(`${host}:${port}/chat-completion-config`, options);
+	const response = await fetch(`${protocol}${host}:${port}/chat-completion-config`, options);
 	const json = await response.json();
 	return json;
 }
 
 export async function getCompletionConfig(): Promise<any> {
 	const options = { method: 'GET' };
-	const response = await fetch(`${host}:${port}/chat-completion-config`, options);
+	const response = await fetch(`${protocol}${host}:${port}/chat-completion-config`, options);
 	const json = await response.json();
 	return json || [];
 }
 
 export async function getModelConfig(): Promise<any> {
 	const options = { method: 'GET' };
-	const response = await fetch(`${host}:${port}/model-config`, options);
+	const response = await fetch(`${protocol}${host}:${port}/model-config`, options);
 	const json = await response.json();
 	return json || [];
 }
@@ -96,7 +105,10 @@ export async function forkConversationAtMessage(
 	messageId: string
 ): Promise<{ chatSessionId: string; timelineId: string; messages: ServerMessage[] }> {
 	const options = { method: 'POST' };
-	const response = await fetch(`${host}:${port}/fork-conversation/${messageId}`, options);
+	const response = await fetch(
+		`${protocol}${host}:${port}/fork-conversation/${messageId}`,
+		options
+	);
 	const json = await response.json();
 	return json;
 }
@@ -106,7 +118,10 @@ export async function rerunModelFromMessage(
 	messageId: string
 ): Promise<{ chatSessionId: string; timelineId: string; messages: ServerMessage[] }> {
 	const options = { method: 'POST' };
-	const response = await fetch(`${host}:${port}/rerun-conversation/${messageId}`, options);
+	const response = await fetch(
+		`${protocol}${host}:${port}/rerun-conversation/${messageId}`,
+		options
+	);
 	const json = await response.json();
 	return json;
 }

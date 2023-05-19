@@ -101,6 +101,10 @@ var CHAT_COMPLETION_CONFIG = ChatCompletionConfig{
 	Verbose:       false,
 }
 
+const (
+	PORT = "10999"
+)
+
 func main() {
 	app := fiber.New()
 	app.Use(cors.New(cors.Config{
@@ -558,7 +562,7 @@ func main() {
 
 	// Start the Fiber server in a separate goroutine
 	go func() {
-		err := app.Listen(":3000")
+		err := app.Listen(":" + PORT)
 		if err != nil {
 			panic(err)
 		}
@@ -592,17 +596,18 @@ func standalone() {
 	defer w.Destroy()
 	w.SetTitle("gmessage")
 	w.SetSize(1080, 820, webview.HintNone)
-	w.Navigate("http://localhost:3000/")
+	w.Navigate(
+		"http://" + "localhost" + ":" + PORT + "/",
+	)
 	w.Run()
 }
 
 func onReady() {
 	serverHost := "localhost"
-	serverPort := "3000"
 
 	systray.SetTemplateIcon(icon.Data, icon.Data)
 	systray.SetTitle("gmessage - Live")
-	systray.SetTooltip("Server running on " + serverHost + ":" + serverPort)
+	systray.SetTooltip("Server running on " + serverHost + ":" + PORT)
 
 	mOpenUI := systray.AddMenuItem("Open UI", "Open the application interface")
 	mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
@@ -611,7 +616,7 @@ func onReady() {
 		for {
 			select {
 			case <-mOpenUI.ClickedCh:
-				open.Run("http://" + serverHost + ":" + serverPort)
+				open.Run("http://" + serverHost + ":" + PORT)
 			case <-mQuit.ClickedCh:
 				systray.Quit()
 				fmt.Println("Quit now...")

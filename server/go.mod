@@ -11,7 +11,7 @@ require (
 	github.com/webview/webview v0.0.0-20230415172654-8387ff8945fc
 )
 
-replace github.com/nomic-ai/gpt4all/gpt4all-bindings/golang => ../../gpt4all/gpt4all-bindings/golang
+replace github.com/nomic-ai/gpt4all/gpt4all-bindings/golang => ./vendors/gpt4all-bindings/golang
 
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
