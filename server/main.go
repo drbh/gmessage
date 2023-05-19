@@ -86,17 +86,17 @@ var INIT_MESSAGES = []Message{
 }
 
 var CHAT_COMPLETION_CONFIG = ChatCompletionConfig{
-	LogitsSize:    50257,
-	TokensSize:    50257,
-	NPast:         1,
-	NCtx:          1024,
-	NPredict:      128,
-	TopK:          0,
+	LogitsSize:    0,
+	TokensSize:    0,
+	NPast:         0,
+	NCtx:          0,
+	NPredict:      200,
+	TopK:          40,
 	TopP:          0.9,
 	Temp:          0.9,
-	NBatch:        1,
-	RepeatPenalty: 1.0,
-	RepeatLastN:   0,
+	NBatch:        9,
+	RepeatPenalty: 1.1,
+	RepeatLastN:   64,
 	ContextErase:  0.0,
 	Verbose:       false,
 }

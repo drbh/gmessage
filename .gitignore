@@ -12,3 +12,4 @@ vite.config.ts.timestamp-*
 *.pyc
 gmessage
 *.bin
+build.flag
