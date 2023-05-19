@@ -1,17 +1,17 @@
 import type { ServerMessage } from './types';
 
-let protocol = 'http';
+// always the backend port
+let port = 10999;
+
+// however if we are in production, we need to use the window location
+let protocol = 'http://';
 let host = 'localhost';
-let port = 8000;
 
 // if window get the host and port from the window location
 if (typeof window !== 'undefined') {
 	protocol = window.location.protocol.slice(0, -1) + '://';
 	host = window.location.hostname;
-	port = Number(window.location.port);
 }
-
-// const port = 3000;
 
 const extractJson = (data: string) => JSON.parse(JSON.parse(data)[0]);
 
@@ -29,6 +29,38 @@ export async function sendMessageToServer(
 	console.log('json', json);
 	if (json.messages) return json.messages;
 	return json || [];
+}
+
+// send message but stream back the messages as they come in
+export async function sendMessageToServerStream(
+	userMessage: string,
+	chatSessionId: string,
+	incrementalMessageCallback: (incrementalMessage: any) => void
+): Promise<ServerMessage[] | null> {
+	const options = {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ chat_id: Number(chatSessionId), message: userMessage })
+	};
+	const response = await fetch(`${protocol}${host}:${port}/stream`, options);
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder('utf-8');
+
+	let done = false;
+	while (!done) {
+		const { value, done: readerDone } = await reader.read();
+		done = readerDone;
+		if (value) {
+			const chunk = decoder.decode(value);
+			incrementalMessageCallback(chunk);
+		}
+	}
+
+	// refetch the messages
+	let messages = await getCurrentChatSession(chatSessionId);
+
+	// return messages;
+	return messages;
 }
 
 export async function getCurrentChatSession(chatSessionId: string): Promise<ServerMessage[]> {

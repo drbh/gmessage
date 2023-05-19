@@ -6,7 +6,8 @@
 		sendMessageToServer,
 		getSupportedModels,
 		getCompletionConfig,
-		getModelConfig
+		getModelConfig,
+		sendMessageToServerStream
 	} from '../chat/api';
 	import { convertMessage, scrollToBottom } from '../chat/helpers';
 	import ChatHeader from './Chat/ChatHeader.svelte';
@@ -95,6 +96,16 @@
 		inputEl.style.height = inputEl.scrollHeight + 'px';
 	}
 
+	// add to the pending text
+	const incrementalMessageCallback = (msg: any) => {
+		let parsed = { text: '' };
+		try {
+			parsed = JSON.parse(msg);
+		} catch (error) {}
+		pendingText += parsed.text;
+	};
+	let pendingText = '';
+
 	const sendMessage = async (event: any) => {
 		const content = inputEl.value.trim();
 		const timestamp = new Date().toLocaleTimeString([], {
@@ -103,33 +114,44 @@
 			second: '2-digit'
 		});
 
-		// if no chatSessionId, start a new chat session
-		if (!chatSessionId) {
-			preparingChatSession = true;
+		// if message is the first message, create a new chat session
+		if (messages.length === 0) {
 
-			// const boardId = window.location.pathname.split('/')[2];
+			// TODO: fix this
+			// if message are empty then we are in a new session
+			// and we dont know the id yet
+			// so we need to get it from local storage
 			chatSessionId = localStorage.getItem('chatSessionId') || '';
+
+			messages = [
+				{ type: '', content, timestamp, key: uuidv4() },
+				{ type: '', content, timestamp, key: uuidv4() },
+				{ type: '', content, timestamp, key: uuidv4() }
+			];
 
 			inputEl.value = '';
 		}
 
 		// if not the first and we have content, send message to server
 		if (content) {
-			if (!preparingChatSession) {
-				messages = [...messages, { type: 'sent', content, timestamp, key: uuidv4() }];
-			}
+			messages = [...messages, { type: 'sent', content, timestamp, key: uuidv4() }];
+			// }
 			inputEl.value = '';
-			preparingChatSession = false;
 
 			setTimeout(() => {
 				typingMessage = { type: 'received', content: 'Typing...', timestamp };
 			}, 400);
 
-			const serverMessagesPromise = sendMessageToServer(content, chatSessionId);
+			const serverMessagesPromise = sendMessageToServerStream(
+				content,
+				chatSessionId,
+				incrementalMessageCallback
+			);
 			const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 120_000));
 			const serverMessages = await Promise.race([serverMessagesPromise, timeoutPromise]);
 
 			typingMessage = null;
+			pendingText = '';
 
 			if (serverMessages) {
 				messages = [
@@ -181,7 +203,7 @@
 <!-- Main -->
 <div class="bg-[color:var(--primary-light)] h-full flex flex-col shadow-lg w-full">
 	<ChatHeader {isHoveringPictures} {menuIsOpen} {messages} {handleSettingsClick} />
-	<ChatMessages {inputEl} {messages} {typingMessage} {preparingChatSession} />
+	<ChatMessages {inputEl} {messages} {typingMessage} {preparingChatSession} {pendingText} />
 	<ChatInput bind:inputEl {handleKeyUp} {updateHeight} {sendMessage} />
 </div>
 

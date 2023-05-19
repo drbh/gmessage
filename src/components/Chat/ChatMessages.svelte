@@ -19,6 +19,8 @@
 	export let typingMessage: any = null;
 	export let preparingChatSession = false;
 
+	export let pendingText = '';
+
 	let chatContainerRef: any;
 
 	afterUpdate(() => {
@@ -74,10 +76,7 @@
 		{:else}
 			{#each messages.slice(3) as message, index}
 				{#if // current message is sent by the user
-				new Date(
-					message?.timestamp || 0 
-					//+ 'Z'
-					).getMinutes() - new Date(messages[index + 3 - 1]?.timestamp || 0).getMinutes() >= 1}
+				new Date(message?.timestamp || 0).getMinutes() - new Date(messages[index + 3 - 1]?.timestamp || 0).getMinutes() >= 1}
 					<div
 						class="
 						flex
@@ -90,7 +89,7 @@
 						font-[400]
 						"
 					>
-						{new Date(message.timestamp ).toLocaleString('en-US', {
+						{new Date(message.timestamp).toLocaleString('en-US', {
 							weekday: 'long',
 							year: 'numeric',
 							month: 'long',
@@ -247,6 +246,32 @@
 			{/each}
 		{/if}
 
+		{#if pendingText !== ''}
+			<div
+				class="
+				shadow-sm
+				hover:shadow-md
+				bg-{'[color:var(--secondary)]'} 
+				text-{'white'}
+				rounded-xl
+				px-4
+				py-2
+				text-sm
+				max-w-[26rem]
+				min-w-[16rem]
+				"
+			>
+				<p>{pendingText}</p>
+				<div class="flex justify-between mt-1 text-xs opacity-50">
+					<p class="mt-1 mr-4"></p>
+					<p class="mt-1">
+						<Icon src={ArrowPath} class="w-4 h-4 animate-spin" />
+					</p>
+				</div>
+				<!-- End of the message -->
+			</div>
+		{/if}
+
 		{#if preparingChatSession}
 			<div class="flex items-end">
 				<div
@@ -262,7 +287,7 @@
 			</div>
 		{/if}
 
-		{#if typingMessage}
+		{#if typingMessage && pendingText === ''}
 			<div class="flex items-end">
 				<div
 					class={`bg-[color:var(--secondary)] text-gray-900 rounded-lg px-4 py-2 text-sm w-[200px]`}
@@ -272,7 +297,7 @@
 						<span class="h-2 w-2 bg-gray-300 rounded-full" />
 						<span class="h-2 w-2 bg-gray-300 rounded-full" />
 					</div>
-					<p class="text-xs mt-1 text-gray-400">typing</p>
+					<p class="text-xs mt-1 text-gray-400 animate-pulse">thinking</p>
 				</div>
 			</div>
 		{/if}
