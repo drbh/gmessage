@@ -9,12 +9,21 @@ Status: 🐣 (needs bug fixes and stabilization of core features, most happy pat
 ## Running the project
 
 ```bash
-# app
-pnpm i
-pnpm run dev --port 5190
+# run the command to do the following
+make
+# start web app makefile
+#   install pnpm
+#   install dependencies
+#   build the web app
+#
+# start sever makefile
+#   get git dependencies
+#   build gpt4all dependencies
+#   download llm model
+#   build server
 
-# server
-uvicorn main:app --reload
+# star the standalone server + app
+server/gmessage
 ```
 
 ### Why?

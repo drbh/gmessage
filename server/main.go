@@ -114,7 +114,7 @@ func main() {
 
 	// connect to the database
 	var err error
-	db, err = sql.Open("sqlite3", "./database.db")
+	db, err = sql.Open("sqlite3", "./server/database.db")
 	if err != nil {
 		panic(err)
 	}
@@ -141,7 +141,7 @@ func main() {
 	}
 
 	threads := 1
-	model := "./ggml-mpt-7b-chat.bin"
+	model := "./server/ggml-mpt-7b-chat.bin"
 
 	l, err := gpt4all.New(model, gpt4all.SetModelType(gpt4all.MPTType), gpt4all.SetThreads(threads))
 
@@ -558,7 +558,7 @@ func main() {
 	})
 
 	// serve static files in ../build
-	app.Static("/", "../build")
+	app.Static("/", "build")
 
 	// Start the Fiber server in a separate goroutine
 	go func() {
