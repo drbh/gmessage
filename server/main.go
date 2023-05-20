@@ -20,7 +20,6 @@ import (
 	gpt4all "github.com/nomic-ai/gpt4all/gpt4all-bindings/golang"
 
 	"github.com/getlantern/systray"
-	"github.com/getlantern/systray/example/icon"
 	"github.com/skratchdot/open-golang/open"
 )
 
@@ -705,12 +704,20 @@ func standalone() {
 func onReady() {
 	serverHost := "localhost"
 
-	systray.SetTemplateIcon(icon.Data, icon.Data)
-	systray.SetTitle("gmessage - Live")
-	systray.SetTooltip("Server running on " + serverHost + ":" + PORT)
+	systray.SetTemplateIcon(Icon, Icon)
 
 	mOpenUI := systray.AddMenuItem("Open In Browser", "Open the application interface")
 	mOpenApp := systray.AddMenuItem("Open Desktop App", "Open the application interface")
+
+	systray.AddSeparator()
+
+	networkInfo := systray.AddMenuItem("✔ http://"+serverHost+":"+PORT, "✔ http://"+serverHost+":"+PORT)
+	memoryInfo := systray.AddMenuItem("✔ 4.5GB model loaded into memory", "✔ 4.5GB model loaded into memory")
+
+	networkInfo.Disable()
+	memoryInfo.Disable()
+
+	systray.AddSeparator()
 	mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
 
 	go func() {
@@ -740,6 +747,9 @@ func onReady() {
 				systray.Quit()
 				fmt.Println("Quit now...")
 				return
+				// case <-mToggle.ClickedCh:
+				// 	toggle()
+
 			}
 		}
 	}()

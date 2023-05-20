@@ -6,6 +6,11 @@ run: submodule lib check build
 
 # Check if the model is downloaded; if not, download it
 check:
+	@if [ ! -d "$(HOME)/.cache/gpt4all" ]; then \
+		echo "Need to create $(HOME)/.cache/gpt4all"; \
+		mkdir -p "$(HOME)/.cache/gpt4all"; \
+		echo "🌈 Created $(HOME)/.cache/gpt4all"; \
+	fi
 	@if [ ! -f "$(HOME)/.cache/gpt4all/$(MODEL_NAME)" ]; then \
 		echo "Need to download from https://gpt4all.io/models/$(MODEL_NAME)"; \
 		mkdir -p "$(HOME)/.cache/gpt4all"; \
@@ -31,12 +36,12 @@ lib:
 
 # run the standalone app
 app:
-	@C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go run main.go
+	@C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go run main.go icon.go
 
 # run with menu instead of standalone
 menu:
-	@C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go run main.go menu
+	@C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go run main.go icon.go menu
 
 # build the standalone app
 build:
-	@C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go build -o ../gmessage main.go
+	@C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go build -o ../gmessage main.go icon.go
