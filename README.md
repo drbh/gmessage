@@ -38,5 +38,5 @@ Note: This will download a 4.5GB file (the MPT-7B model) please make sure you ha
 
 ```bash
 make
-./gmessage
+bin/gmessage
 ```

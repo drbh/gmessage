@@ -9,62 +9,19 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/gobuffalo/packr/v2"
+
+	"github.com/getlantern/systray"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/webview/webview"
-
 	gpt4all "github.com/nomic-ai/gpt4all/gpt4all-bindings/golang"
-
-	"github.com/getlantern/systray"
 	"github.com/skratchdot/open-golang/open"
+	"github.com/webview/webview"
 )
-
-type ChatCompletionConfig struct {
-	LogitsSize    int     `json:"logits_size"`
-	TokensSize    int     `json:"tokens_size"`
-	NPast         int     `json:"n_past"`
-	NCtx          int     `json:"n_ctx"`
-	NPredict      int     `json:"n_predict"`
-	TopK          int     `json:"top_k"`
-	TopP          float64 `json:"top_p"`
-	Temp          float64 `json:"temp"`
-	NBatch        int     `json:"n_batch"`
-	RepeatPenalty float64 `json:"repeat_penalty"`
-	RepeatLastN   int     `json:"repeat_last_n"`
-	ContextErase  float64 `json:"context_erase"`
-	Verbose       bool    `json:"verbose"`
-}
-
-type ModelConfig struct {
-	Model    string `json:"model"`
-	NThreads int    `json:"n_threads"`
-}
-
-type UpdateMessage struct {
-	Content string `json:"content"`
-}
-
-type Message struct {
-	ID               int       `json:"id"`
-	Role             string    `json:"role"`
-	Content          string    `json:"content"`
-	ChatID           int       `json:"chat_id"`
-	RequestTimestamp time.Time `json:"request_timestamp"`
-	Timestamp        time.Time `json:"timestamp"`
-}
-
-type UserInput struct {
-	Message string `json:"message"`
-	ChatID  int    `json:"chat_id"`
-}
-
-type ChatCompletionResponse struct {
-	Messages []Message `json:"messages"`
-}
 
 var db *sql.DB
 
@@ -105,15 +62,11 @@ var CHAT_COMPLETION_CONFIG = ChatCompletionConfig{
 }
 
 const (
-	PORT  = "10999"
-	DB    = ".cache/gmessage/database.db"
-	MODEL = ".cache/gpt4all/ggml-mpt-7b-chat.bin"
+	PORT        = "10999"
+	DB          = ".cache/gmessage/database.db"
+	MODEL       = ".cache/gpt4all/ggml-mpt-7b-chat.bin"
+	DEV_VERBOSE = false
 )
-
-type ChatMessage struct {
-	Role    string
-	Content string
-}
 
 func buildPrompt(messages []ChatMessage, defaultPromptHeader bool, defaultPromptFooter bool) string {
 	fullPrompt := ""
@@ -126,29 +79,32 @@ func buildPrompt(messages []ChatMessage, defaultPromptHeader bool, defaultPrompt
 
 	if defaultPromptHeader {
 		fullPrompt += `### Instruction: 
-The prompt below is a question to answer, a task to complete, or a conversation 
-to respond to; decide which and write an appropriate response.
-
-### Prompt: `
+            The prompt below is a question to answer, a task to complete, or a conversation 
+            to respond to; decide which and write an appropriate response.
+            
+			### Prompt: `
 	}
 
 	for _, message := range messages {
 		if message.Role == "user" {
-			userMessage := "\n" + message.Content
+			userMessage := `
+` + message.Content
 			fullPrompt += userMessage
 		}
 		if message.Role == "assistant" {
 			assistantMessage := `
-### Response:
-` + message.Content
+### Response: ` + message.Content
 			fullPrompt += assistantMessage
 		}
 	}
 
 	if defaultPromptFooter {
 		fullPrompt += `
-### Response:
-`
+### Response: `
+	}
+
+	if DEV_VERBOSE {
+		fmt.Println("Full prompt:", fullPrompt)
 	}
 
 	return fullPrompt
@@ -206,287 +162,173 @@ func main() {
 		MODEL_CONFIG.Model = model
 	}
 
-	threads := 1
+	// always start server in background
+	go func() {
 
-	model := home + "/" + MODEL
+		threads := 1
 
-	l, err := gpt4all.New(model,
-		gpt4all.SetModelType(gpt4all.MPTType),
-		// gpt4all.SetModelType(gpt4all.LLaMAType),
-		gpt4all.SetThreads(threads))
+		model := home + "/" + MODEL
 
-	defer l.Free()
+		l, err := gpt4all.New(model,
+			gpt4all.SetModelType(gpt4all.MPTType),
+			// gpt4all.SetModelType(gpt4all.LLaMAType),
+			gpt4all.SetThreads(threads))
 
-	// serve sse.html
-	app.Static("/sse", "./sse.html")
+		defer l.Free()
 
-	app.Get("/stream", func(c *fiber.Ctx) error {
-		c.Set(fiber.HeaderContentType, "text/event-stream")
-		c.Set(fiber.HeaderCacheControl, "no-cache")
-		c.Set(fiber.HeaderConnection, "keep-alive")
-		c.Context().Response.Header.SetCanonical([]byte("X-Accel-Buffering"), []byte("no"))
-		c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
-			for i := 0; i < 10; i++ {
-				fmt.Fprintf(w, "data: Message %d\n\n", i)
-				w.Flush()
-				time.Sleep(1 * time.Second)
-			}
-		})
-		return nil
-	})
-
-	// Route for getting model configuration
-	app.Get("/model-config", func(c *fiber.Ctx) error {
-		return c.JSON(MODEL_CONFIG)
-	})
-
-	// Route for updating model configuration
-	app.Put("/model-config", func(c *fiber.Ctx) error {
-		var config ModelConfig
-		err := json.Unmarshal(c.Body(), &config)
-		if err != nil {
-			return c.Status(400).SendString(fmt.Sprintf("Failed to load the model: %s", err.Error()))
-		}
-		MODEL_CONFIG = config
-		return c.JSON(MODEL_CONFIG)
-	})
-
-	// Route for getting supported models
-	app.Get("/supported-models", func(c *fiber.Ctx) error {
-		return c.JSON([]string{
-			"ggml-mpt-7b-chat.bin",
-			"ggml-gpt4all-j-v1.3-groovy.bin",
-		})
-	})
-
-	// Route for getting chat completion configuration
-	app.Get("/chat-completion-config", func(c *fiber.Ctx) error {
-		return c.JSON(CHAT_COMPLETION_CONFIG)
-	})
-
-	// Route for updating chat completion configuration
-	app.Put("/chat-completion-config", func(c *fiber.Ctx) error {
-		var config ChatCompletionConfig
-		err := json.Unmarshal(c.Body(), &config)
-		if err != nil {
-			return c.Status(400).SendString(err.Error())
-		}
-		CHAT_COMPLETION_CONFIG = config
-		return c.JSON(CHAT_COMPLETION_CONFIG)
-	})
-
-	// Route for chat
-	app.Post("/message", func(c *fiber.Ctx) error {
-		var input UserInput
-		err := json.Unmarshal(c.Body(), &input)
-		if err != nil {
-			return c.Status(400).SendString(err.Error())
-		}
-
-		response := &ChatCompletionResponse{
-			Messages: []Message{
-				{
-					Role:    "user",
-					Content: input.Message,
-					ChatID:  input.ChatID,
-				},
-			},
-		}
-
-		// check if its a new chat
-		isNewChat := false
-		err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM messages WHERE chat_id = ?)", input.ChatID).Scan(&isNewChat)
-		if err != nil {
-			panic(err)
-		}
-
-		// if its a new chat, add all init messages to the db
-		if !isNewChat {
-			for _, message := range INIT_MESSAGES {
-
-				_, err = db.Exec("INSERT INTO messages (role, content, chat_id) VALUES (?, ?, ?)", message.Role, message.Content, input.ChatID)
-				if err != nil {
-					panic(err)
+		app.Get("/stream", func(c *fiber.Ctx) error {
+			c.Set(fiber.HeaderContentType, "text/event-stream")
+			c.Set(fiber.HeaderCacheControl, "no-cache")
+			c.Set(fiber.HeaderConnection, "keep-alive")
+			c.Context().Response.Header.SetCanonical([]byte("X-Accel-Buffering"), []byte("no"))
+			c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+				for i := 0; i < 10; i++ {
+					fmt.Fprintf(w, "data: Message %d\n\n", i)
+					w.Flush()
+					time.Sleep(1 * time.Second)
 				}
-			}
-		}
+			})
+			return nil
+		})
 
-		// Insert the new messages into the database.
-		for _, message := range response.Messages {
-			_, err := db.Exec("INSERT INTO messages (role, content, chat_id) VALUES (?, ?, ?)", message.Role, message.Content, message.ChatID)
+		// Route for getting model configuration
+		app.Get("/model-config", func(c *fiber.Ctx) error {
+			return c.JSON(MODEL_CONFIG)
+		})
+
+		// Route for updating model configuration
+		app.Put("/model-config", func(c *fiber.Ctx) error {
+			var config ModelConfig
+			err := json.Unmarshal(c.Body(), &config)
 			if err != nil {
-				return c.Status(500).SendString(err.Error())
+				return c.Status(400).SendString(fmt.Sprintf("Failed to load the model: %s", err.Error()))
 			}
-		}
+			MODEL_CONFIG = config
+			return c.JSON(MODEL_CONFIG)
+		})
 
-		// get all of the messages for the chat
-		chatRows, err := db.Query("SELECT role, content FROM messages WHERE chat_id = ?", input.ChatID)
-		if err != nil {
-			panic(err)
-		}
+		// Route for getting supported models
+		app.Get("/supported-models", func(c *fiber.Ctx) error {
+			return c.JSON([]string{
+				"ggml-mpt-7b-chat.bin",
+				"ggml-gpt4all-j-v1.3-groovy.bin",
+			})
+		})
 
-		// build chatMessages from rows
-		chatMessages := []ChatMessage{}
-		for chatRows.Next() {
-			var role string
-			var content string
-			err = chatRows.Scan(&role, &content)
+		// Route for getting chat completion configuration
+		app.Get("/chat-completion-config", func(c *fiber.Ctx) error {
+			return c.JSON(CHAT_COMPLETION_CONFIG)
+		})
+
+		// Route for updating chat completion configuration
+		app.Put("/chat-completion-config", func(c *fiber.Ctx) error {
+			var config ChatCompletionConfig
+			err := json.Unmarshal(c.Body(), &config)
+			if err != nil {
+				return c.Status(400).SendString(err.Error())
+			}
+			CHAT_COMPLETION_CONFIG = config
+			return c.JSON(CHAT_COMPLETION_CONFIG)
+		})
+
+		// Route for chat
+		app.Post("/message", func(c *fiber.Ctx) error {
+			var input UserInput
+			err := json.Unmarshal(c.Body(), &input)
+			if err != nil {
+				return c.Status(400).SendString(err.Error())
+			}
+
+			response := &ChatCompletionResponse{
+				Messages: []Message{
+					{
+						Role:    "user",
+						Content: input.Message,
+						ChatID:  input.ChatID,
+					},
+				},
+			}
+
+			// check if its a new chat
+			isNewChat := false
+			err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM messages WHERE chat_id = ?)", input.ChatID).Scan(&isNewChat)
 			if err != nil {
 				panic(err)
 			}
 
-			chatMessages = append(chatMessages, ChatMessage{
-				Role:    role,
-				Content: content,
-			})
-		}
+			// if its a new chat, add all init messages to the db
+			if !isNewChat {
+				for _, message := range INIT_MESSAGES {
 
-		prompt := buildPrompt(chatMessages, true, true)
-
-		l.SetTokenCallback(func(s string) bool {
-			fmt.Print(s) // show output
-			return true
-		})
-
-		resp, err := l.Predict(prompt, gpt4all.SetTemperature(0.1))
-		if err != nil {
-			panic(err)
-		}
-
-		// Insert the messages into the database a mock assistant response.
-		_, err = db.Exec("INSERT INTO messages (role, content, chat_id) VALUES (?, ?, ?)", "assistant", resp, input.ChatID)
-		if err != nil {
-			return c.Status(500).SendString(err.Error())
-		}
-
-		rows, err := db.Query("SELECT * FROM messages WHERE chat_id = ?", input.ChatID)
-		if err != nil {
-			return c.Status(500).SendString(err.Error())
-		}
-		defer rows.Close()
-
-		var messages []Message
-		for rows.Next() {
-			var message Message
-			if err := rows.Scan(
-				&message.ID,
-				&message.Role,
-				&message.Content,
-				&message.ChatID,
-				&message.RequestTimestamp,
-				&message.Timestamp,
-			); err != nil {
-				return c.Status(500).SendString(err.Error())
-			}
-			messages = append(messages, message)
-		}
-
-		// if nil make it empty list
-		if messages == nil {
-			messages = []Message{}
-		}
-
-		return c.JSON(messages)
-	})
-
-	// Route for chat
-	app.Post("/stream", func(c *fiber.Ctx) error {
-		var input UserInput
-		err := json.Unmarshal(c.Body(), &input)
-		if err != nil {
-			return c.Status(400).SendString(err.Error())
-		}
-
-		// Implement your chat completion logic here and get the response.
-		// For example:
-		response := &ChatCompletionResponse{
-			Messages: []Message{
-				{
-					Role:    "user",
-					Content: input.Message,
-					ChatID:  input.ChatID,
-				},
-			},
-		}
-
-		// check if its a new chat
-		isNewChat := false
-		err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM messages WHERE chat_id = ?)", input.ChatID).Scan(&isNewChat)
-		if err != nil {
-			panic(err)
-		}
-
-		// if its a new chat, add all init messages to the db
-		if !isNewChat {
-			for _, message := range INIT_MESSAGES {
-
-				_, err = db.Exec("INSERT INTO messages (role, content, chat_id) VALUES (?, ?, ?)", message.Role, message.Content, input.ChatID)
-				if err != nil {
-					panic(err)
+					_, err = db.Exec("INSERT INTO messages (role, content, chat_id) VALUES (?, ?, ?)", message.Role, message.Content, input.ChatID)
+					if err != nil {
+						panic(err)
+					}
 				}
 			}
-		}
 
-		// Insert the new messages into the database.
-		for _, message := range response.Messages {
-			_, err := db.Exec("INSERT INTO messages (role, content, chat_id) VALUES (?, ?, ?)", message.Role, message.Content, message.ChatID)
-			if err != nil {
-				return c.Status(500).SendString(err.Error())
+			// Insert the new messages into the database.
+			for _, message := range response.Messages {
+				_, err := db.Exec("INSERT INTO messages (role, content, chat_id) VALUES (?, ?, ?)", message.Role, message.Content, message.ChatID)
+				if err != nil {
+					return c.Status(500).SendString(err.Error())
+				}
 			}
-		}
 
-		// get all of the messages for the chat
-		chatRows, err := db.Query("SELECT role, content FROM messages WHERE chat_id = ?", input.ChatID)
-		if err != nil {
-			panic(err)
-		}
-
-		// build chatMessages from rows
-		chatMessages := []ChatMessage{}
-		for chatRows.Next() {
-			var role string
-			var content string
-			err = chatRows.Scan(&role, &content)
+			// get all of the messages for the chat
+			chatRows, err := db.Query("SELECT role, content FROM messages WHERE chat_id = ?", input.ChatID)
 			if err != nil {
 				panic(err)
 			}
 
-			chatMessages = append(chatMessages, ChatMessage{
-				Role:    role,
-				Content: content,
-			})
-		}
+			// build chatMessages from rows
+			chatMessages := []ChatMessage{}
+			for chatRows.Next() {
+				var role string
+				var content string
+				err = chatRows.Scan(&role, &content)
+				if err != nil {
+					panic(err)
+				}
 
-		prompt := buildPrompt(chatMessages, true, true)
+				chatMessages = append(chatMessages, ChatMessage{
+					Role:    role,
+					Content: content,
+				})
+			}
 
-		c.Set(fiber.HeaderContentType, "text/event-stream")
-		c.Set(fiber.HeaderCacheControl, "no-cache")
-		c.Set(fiber.HeaderConnection, "keep-alive")
-		c.Context().Response.Header.SetCanonical([]byte("X-Accel-Buffering"), []byte("no"))
-		c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+			prompt := buildPrompt(chatMessages, true, true)
 
 			l.SetTokenCallback(func(s string) bool {
 				fmt.Print(s) // show output
-				fmt.Fprintf(w, "{\"text\": \"%s\"}\r\n", s)
-				w.Flush()
-
 				return true
 			})
 
-			resp, err := l.Predict(prompt, gpt4all.SetTemperature(0.1))
+			request_timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+
+			resp, err := l.Predict(prompt,
+
+				gpt4all.SetTokens(CHAT_COMPLETION_CONFIG.TokensSize),
+				gpt4all.SetRepeatLastN(CHAT_COMPLETION_CONFIG.NPast),
+				gpt4all.SetTemperature(CHAT_COMPLETION_CONFIG.Temp),
+				gpt4all.SetTopP(CHAT_COMPLETION_CONFIG.TopP),
+				gpt4all.SetTopK(CHAT_COMPLETION_CONFIG.TopK),
+				gpt4all.SetRepeatPenalty(CHAT_COMPLETION_CONFIG.RepeatPenalty),
+				gpt4all.SetContextErase(CHAT_COMPLETION_CONFIG.ContextErase),
+			)
 			if err != nil {
 				panic(err)
 			}
 
 			// Insert the messages into the database a mock assistant response.
-			_, err = db.Exec("INSERT INTO messages (role, content, chat_id) VALUES (?, ?, ?)", "assistant", resp, input.ChatID)
+			_, err = db.Exec("INSERT INTO messages (role, content, chat_id, request_timestamp) VALUES (?, ?, ?, ?)", "assistant", resp, input.ChatID, request_timestamp)
 			if err != nil {
-				panic(err)
+				return c.Status(500).SendString(err.Error())
 			}
 
 			rows, err := db.Query("SELECT * FROM messages WHERE chat_id = ?", input.ChatID)
 			if err != nil {
-				panic(err)
+				return c.Status(500).SendString(err.Error())
 			}
 			defer rows.Close()
 
@@ -501,179 +343,450 @@ func main() {
 					&message.RequestTimestamp,
 					&message.Timestamp,
 				); err != nil {
-					panic(err)
+					return c.Status(500).SendString(err.Error())
 				}
 				messages = append(messages, message)
 			}
 
+			// if nil make it empty list
+			if messages == nil {
+				messages = []Message{}
+			}
+
+			return c.JSON(messages)
 		})
 
-		return nil
-	})
+		// Route for chat
+		app.Post("/stream", func(c *fiber.Ctx) error {
+			var input UserInput
+			err := json.Unmarshal(c.Body(), &input)
+			if err != nil {
+				return c.Status(400).SendString(err.Error())
+			}
 
-	// Route for an ad-hoc request and response
-	app.Post("/hook", func(c *fiber.Ctx) error {
-		// read the request body
-		body := c.Body()
+			// Implement your chat completion logic here and get the response.
+			// For example:
+			response := &ChatCompletionResponse{
+				Messages: []Message{
+					{
+						Role:    "user",
+						Content: input.Message,
+						ChatID:  input.ChatID,
+					},
+				},
+			}
 
-		// build prompt
-		prompt := "Question:\n" + string(body) + "\nAnswer:\n"
-
-		l.SetTokenCallback(func(s string) bool {
-			fmt.Print(s) // show the token
-			return true
-		})
-
-		resp, err := l.Predict(prompt, gpt4all.SetTemperature(0.1))
-		if err != nil {
-			panic(err)
-		}
-
-		// send a response to the client
-		return c.SendString(resp)
-	})
-
-	app.Post("/stream-hook", func(c *fiber.Ctx) error {
-		// read the request body
-		body := c.Body()
-
-		// build prompt
-		prompt := "Question:\n" + string(body) + "\nAnswer:\n"
-
-		c.Set(fiber.HeaderContentType, "text/event-stream")
-		c.Set(fiber.HeaderCacheControl, "no-cache")
-		c.Set(fiber.HeaderConnection, "keep-alive")
-		c.Context().Response.Header.SetCanonical([]byte("X-Accel-Buffering"), []byte("no"))
-		c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
-
-			l.SetTokenCallback(func(s string) bool {
-				fmt.Print(s) // show the response in the console
-				fmt.Fprintf(w, "{\"text\": \"%s\"}\r\n", s)
-				w.Flush()
-
-				return true
-			})
-
-			_, err := l.Predict(prompt, gpt4all.SetTemperature(0.1))
+			// check if its a new chat
+			isNewChat := false
+			err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM messages WHERE chat_id = ?)", input.ChatID).Scan(&isNewChat)
 			if err != nil {
 				panic(err)
 			}
+
+			// if its a new chat, add all init messages to the db
+			if !isNewChat {
+				for _, message := range INIT_MESSAGES {
+
+					_, err = db.Exec("INSERT INTO messages (role, content, chat_id) VALUES (?, ?, ?)", message.Role, message.Content, input.ChatID)
+					if err != nil {
+						panic(err)
+					}
+				}
+			}
+
+			// Insert the new messages into the database.
+			for _, message := range response.Messages {
+				_, err := db.Exec("INSERT INTO messages (role, content, chat_id) VALUES (?, ?, ?)", message.Role, message.Content, message.ChatID)
+				if err != nil {
+					return c.Status(500).SendString(err.Error())
+				}
+			}
+
+			// get all of the messages for the chat
+			chatRows, err := db.Query("SELECT role, content FROM messages WHERE chat_id = ?", input.ChatID)
+			if err != nil {
+				panic(err)
+			}
+
+			// build chatMessages from rows
+			chatMessages := []ChatMessage{}
+			for chatRows.Next() {
+				var role string
+				var content string
+				err = chatRows.Scan(&role, &content)
+				if err != nil {
+					panic(err)
+				}
+
+				chatMessages = append(chatMessages, ChatMessage{
+					Role:    role,
+					Content: content,
+				})
+			}
+
+			prompt := buildPrompt(chatMessages, true, true)
+
+			c.Set(fiber.HeaderContentType, "text/event-stream")
+			c.Set(fiber.HeaderCacheControl, "no-cache")
+			c.Set(fiber.HeaderConnection, "keep-alive")
+			c.Context().Response.Header.SetCanonical([]byte("X-Accel-Buffering"), []byte("no"))
+			c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+
+				l.SetTokenCallback(func(s string) bool {
+					fmt.Print(s) // show output
+					fmt.Fprintf(w, "{\"text\": \"%s\"}\r\n", s)
+					w.Flush()
+
+					return true
+				})
+
+				request_timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+
+				resp, err := l.Predict(prompt,
+
+					gpt4all.SetTokens(CHAT_COMPLETION_CONFIG.TokensSize),
+					gpt4all.SetRepeatLastN(CHAT_COMPLETION_CONFIG.NPast),
+					gpt4all.SetTemperature(CHAT_COMPLETION_CONFIG.Temp),
+					gpt4all.SetTopP(CHAT_COMPLETION_CONFIG.TopP),
+					gpt4all.SetTopK(CHAT_COMPLETION_CONFIG.TopK),
+					gpt4all.SetRepeatPenalty(CHAT_COMPLETION_CONFIG.RepeatPenalty),
+					gpt4all.SetContextErase(CHAT_COMPLETION_CONFIG.ContextErase),
+				)
+				if err != nil {
+					panic(err)
+				}
+
+				// Insert the messages into the database a mock assistant response.
+				_, err = db.Exec("INSERT INTO messages (role, content, chat_id, request_timestamp) VALUES (?, ?, ?, ?)", "assistant", resp, input.ChatID, request_timestamp)
+				if err != nil {
+					panic(err)
+				}
+
+				rows, err := db.Query("SELECT * FROM messages WHERE chat_id = ?", input.ChatID)
+				if err != nil {
+					panic(err)
+				}
+				defer rows.Close()
+
+				var messages []Message
+				for rows.Next() {
+					var message Message
+					if err := rows.Scan(
+						&message.ID,
+						&message.Role,
+						&message.Content,
+						&message.ChatID,
+						&message.RequestTimestamp,
+						&message.Timestamp,
+					); err != nil {
+						panic(err)
+					}
+					messages = append(messages, message)
+				}
+
+			})
+
+			return nil
 		})
 
-		return nil
-	})
+		// Route for an ad-hoc request and response
+		app.Post("/api/completions", func(c *fiber.Ctx) error {
+			// read the request body
+			body := c.Body()
 
-	// Route for getting messages
-	app.Get("/messages/:chat_id", func(c *fiber.Ctx) error {
-		chatID := c.Params("chat_id")
-		rows, err := db.Query("SELECT * FROM messages WHERE chat_id = ?", chatID)
-		if err != nil {
-			return c.Status(500).SendString(err.Error())
-		}
-		defer rows.Close()
+			var data CompletionMessage
+			err := json.Unmarshal(body, &data)
+			if err != nil {
+				panic(err)
+			}
 
-		var messages []Message
-		for rows.Next() {
-			var message Message
-			if err := rows.Scan(
-				&message.ID,
-				&message.Role,
-				&message.Content,
-				&message.ChatID,
-				&message.RequestTimestamp,
-				&message.Timestamp,
-			); err != nil {
+			// build chatMessages from data.Messages
+			chatMessages := []ChatMessage{}
+			for _, message := range data.Messages {
+				chatMessages = append(chatMessages, ChatMessage{
+					Role:    message.Role,
+					Content: message.Content,
+				})
+			}
+
+			prompt := buildPrompt(chatMessages, true, true)
+
+			l.SetTokenCallback(func(s string) bool {
+				fmt.Print(s) // show the token
+				return true
+			})
+
+			resp, err := l.Predict(prompt,
+				gpt4all.SetTokens(CHAT_COMPLETION_CONFIG.TokensSize),
+				gpt4all.SetRepeatLastN(CHAT_COMPLETION_CONFIG.NPast),
+				gpt4all.SetTemperature(CHAT_COMPLETION_CONFIG.Temp),
+				gpt4all.SetTopP(CHAT_COMPLETION_CONFIG.TopP),
+				gpt4all.SetTopK(CHAT_COMPLETION_CONFIG.TopK),
+				gpt4all.SetRepeatPenalty(CHAT_COMPLETION_CONFIG.RepeatPenalty),
+				gpt4all.SetContextErase(CHAT_COMPLETION_CONFIG.ContextErase),
+			)
+			if err != nil {
+				panic(err)
+			}
+
+			response := CompletionResponse{
+				ID:     "cmpl-1",
+				Object: "text_completion",
+				Model:  "gpt4all:2020-05-03",
+				Usage: Usage{
+					PromptTokens:     0,
+					CompletionTokens: 0,
+					TotalTokens:      0,
+				},
+				Choices: []Choice{
+					{
+						Message: ChatMessage{
+							Role:    "assistant",
+							Content: resp,
+						},
+						FinishReason: "stop",
+						Index:        0,
+					},
+				},
+			}
+
+			// send a response to the client
+			return c.JSON(response)
+
+		})
+
+		// Route for an ad-hoc request and response
+		app.Post("/hook", func(c *fiber.Ctx) error {
+			// read the request body
+			body := c.Body()
+
+			// build prompt
+			prompt := "Question:\n" + string(body) + "\nAnswer:\n"
+
+			l.SetTokenCallback(func(s string) bool {
+				fmt.Print(s) // show the token
+				return true
+			})
+
+			resp, err := l.Predict(prompt,
+				gpt4all.SetTokens(CHAT_COMPLETION_CONFIG.TokensSize),
+				gpt4all.SetRepeatLastN(CHAT_COMPLETION_CONFIG.NPast),
+				gpt4all.SetTemperature(CHAT_COMPLETION_CONFIG.Temp),
+				gpt4all.SetTopP(CHAT_COMPLETION_CONFIG.TopP),
+				gpt4all.SetTopK(CHAT_COMPLETION_CONFIG.TopK),
+				gpt4all.SetRepeatPenalty(CHAT_COMPLETION_CONFIG.RepeatPenalty),
+				gpt4all.SetContextErase(CHAT_COMPLETION_CONFIG.ContextErase),
+			)
+			if err != nil {
+				panic(err)
+			}
+
+			// send a response to the client
+			return c.SendString(resp)
+		})
+
+		app.Post("/stream-hook", func(c *fiber.Ctx) error {
+			// read the request body
+			body := c.Body()
+
+			// build prompt
+			prompt := "Question:\n" + string(body) + "\nAnswer:\n"
+
+			c.Set(fiber.HeaderContentType, "text/event-stream")
+			c.Set(fiber.HeaderCacheControl, "no-cache")
+			c.Set(fiber.HeaderConnection, "keep-alive")
+			c.Context().Response.Header.SetCanonical([]byte("X-Accel-Buffering"), []byte("no"))
+			c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+
+				l.SetTokenCallback(func(s string) bool {
+					fmt.Print(s) // show the response in the console
+					fmt.Fprintf(w, "{\"text\": \"%s\"}\r\n", s)
+					w.Flush()
+
+					return true
+				})
+
+				_, err := l.Predict(prompt,
+					gpt4all.SetTokens(CHAT_COMPLETION_CONFIG.TokensSize),
+					gpt4all.SetRepeatLastN(CHAT_COMPLETION_CONFIG.NPast),
+
+					gpt4all.SetTokens(CHAT_COMPLETION_CONFIG.TokensSize),
+					gpt4all.SetRepeatLastN(CHAT_COMPLETION_CONFIG.NPast),
+					gpt4all.SetTemperature(CHAT_COMPLETION_CONFIG.Temp),
+					gpt4all.SetTopP(CHAT_COMPLETION_CONFIG.TopP),
+					gpt4all.SetTopK(CHAT_COMPLETION_CONFIG.TopK),
+					gpt4all.SetRepeatPenalty(CHAT_COMPLETION_CONFIG.RepeatPenalty),
+					gpt4all.SetContextErase(CHAT_COMPLETION_CONFIG.ContextErase),
+
+					gpt4all.SetTemperature(CHAT_COMPLETION_CONFIG.Temp),
+					gpt4all.SetTopP(CHAT_COMPLETION_CONFIG.TopP),
+					gpt4all.SetTopK(CHAT_COMPLETION_CONFIG.TopK),
+					gpt4all.SetRepeatPenalty(CHAT_COMPLETION_CONFIG.RepeatPenalty),
+					gpt4all.SetContextErase(CHAT_COMPLETION_CONFIG.ContextErase),
+				)
+				if err != nil {
+					panic(err)
+				}
+			})
+
+			return nil
+		})
+
+		// Route for getting messages
+		app.Get("/messages/:chat_id", func(c *fiber.Ctx) error {
+			chatID := c.Params("chat_id")
+			rows, err := db.Query("SELECT * FROM messages WHERE chat_id = ?", chatID)
+			if err != nil {
 				return c.Status(500).SendString(err.Error())
 			}
-			messages = append(messages, message)
-		}
+			defer rows.Close()
 
-		// if nil make it empty list
-		if messages == nil {
-			messages = []Message{}
-		}
+			var messages []Message
+			for rows.Next() {
+				var message Message
+				if err := rows.Scan(
+					&message.ID,
+					&message.Role,
+					&message.Content,
+					&message.ChatID,
+					&message.RequestTimestamp,
+					&message.Timestamp,
+				); err != nil {
+					return c.Status(500).SendString(err.Error())
+				}
+				messages = append(messages, message)
+			}
 
-		return c.JSON(messages)
-	})
+			// if nil make it empty list
+			if messages == nil {
+				messages = []Message{}
+			}
 
-	// Route for getting chats
-	app.Get("/chats", func(c *fiber.Ctx) error {
-		rows, err := db.Query("SELECT MAX(id), role, content, chat_id, request_timestamp, timestamp FROM messages GROUP BY chat_id")
-		if err != nil {
+			return c.JSON(messages)
+		})
 
-			return c.Status(500).SendString(err.Error())
-		}
-		defer rows.Close()
+		// Route for getting chats
+		app.Get("/chats", func(c *fiber.Ctx) error {
+			rows, err := db.Query("SELECT MAX(id), role, content, chat_id, request_timestamp, timestamp FROM messages GROUP BY chat_id")
+			if err != nil {
 
-		var chats []Message
-		for rows.Next() {
-			var message Message
-			if err := rows.Scan(
-				&message.ID,
-				&message.Role,
-				&message.Content,
-				&message.ChatID,
-				&message.RequestTimestamp,
-				&message.Timestamp,
-			); err != nil {
 				return c.Status(500).SendString(err.Error())
 			}
-			chats = append(chats, message)
-		}
+			defer rows.Close()
 
-		return c.JSON(chats)
-	})
+			var chats []Message
+			for rows.Next() {
+				var message Message
+				if err := rows.Scan(
+					&message.ID,
+					&message.Role,
+					&message.Content,
+					&message.ChatID,
+					&message.RequestTimestamp,
+					&message.Timestamp,
+				); err != nil {
+					return c.Status(500).SendString(err.Error())
+				}
+				chats = append(chats, message)
+			}
 
-	// Route for searching messages
-	app.Get("/search/:text", func(c *fiber.Ctx) error {
-		text := c.Params("text")
-		rows, err := db.Query("SELECT * FROM messages WHERE content LIKE ?", "%"+text+"%")
-		if err != nil {
-			return c.Status(500).SendString(err.Error())
-		}
-		defer rows.Close()
+			return c.JSON(chats)
+		})
 
-		var messages []Message
-		for rows.Next() {
-			var message Message
-			if err := rows.Scan(
-				&message.ID,
-				&message.Role,
-				&message.Content,
-				&message.ChatID,
-				&message.RequestTimestamp,
-				&message.Timestamp,
-			); err != nil {
+		// Route for searching messages
+		app.Get("/search/:text", func(c *fiber.Ctx) error {
+			text := c.Params("text")
+			rows, err := db.Query("SELECT * FROM messages WHERE content LIKE ?", "%"+text+"%")
+			if err != nil {
 				return c.Status(500).SendString(err.Error())
 			}
-			messages = append(messages, message)
+			defer rows.Close()
+
+			var messages []Message
+			for rows.Next() {
+				var message Message
+				if err := rows.Scan(
+					&message.ID,
+					&message.Role,
+					&message.Content,
+					&message.ChatID,
+					&message.RequestTimestamp,
+					&message.Timestamp,
+				); err != nil {
+					return c.Status(500).SendString(err.Error())
+				}
+				messages = append(messages, message)
+			}
+
+			return c.JSON(messages)
+		})
+
+		// Route for updating a message
+		app.Put("/edit-message/:message_id", func(c *fiber.Ctx) error {
+			messageID := c.Params("message_id")
+			var update UpdateMessage
+			err := json.Unmarshal(c.Body(), &update)
+			if err != nil {
+				return c.Status(400).SendString(err.Error())
+			}
+
+			_, err = db.Exec("UPDATE messages SET content = ? WHERE id = ?", update.Content, messageID)
+			if err != nil {
+				return c.Status(500).SendString(err.Error())
+			}
+
+			return c.SendString("Message updated successfully.")
+		})
+
+		box := packr.New("StaticFiles", "../web/build")
+
+		if DEV_VERBOSE {
+			fmt.Println("Sever binary contains the following UI files:")
+			for _, file := range box.List() {
+				fmt.Println(file)
+			}
 		}
 
-		return c.JSON(messages)
-	})
+		app.Get("*", func(c *fiber.Ctx) error {
+			file, err := box.FindString(c.Path())
 
-	// Route for updating a message
-	app.Put("/edit-message/:message_id", func(c *fiber.Ctx) error {
-		messageID := c.Params("message_id")
-		var update UpdateMessage
-		err := json.Unmarshal(c.Body(), &update)
-		if err != nil {
-			return c.Status(400).SendString(err.Error())
-		}
+			// if / send index.html
+			if c.Path() == "/" {
+				file, err = box.FindString("index.html")
+				if err != nil {
+					return c.SendStatus(fiber.StatusNotFound)
+				}
+				c.Set(fiber.HeaderContentType, "text/html")
+				return c.SendString(file)
+			}
 
-		_, err = db.Exec("UPDATE messages SET content = ? WHERE id = ?", update.Content, messageID)
-		if err != nil {
-			return c.Status(500).SendString(err.Error())
-		}
+			if err != nil {
+				return c.SendStatus(fiber.StatusNotFound)
+			}
 
-		return c.SendString("Message updated successfully.")
-	})
+			// if html send as html
+			if strings.HasSuffix(c.Path(), ".html") {
+				c.Set(fiber.HeaderContentType, "text/html")
+				return c.SendString(file)
+			}
 
-	app.Static("/", "web/build")
+			// if js send as js
+			if strings.HasSuffix(c.Path(), ".js") {
+				c.Set(fiber.HeaderContentType, "text/javascript")
+				return c.SendString(file)
+			}
 
-	// always start server in background
-	go func() {
-		err := app.Listen(":" + PORT)
+			// if css send as css
+			if strings.HasSuffix(c.Path(), ".css") {
+				c.Set(fiber.HeaderContentType, "text/css")
+				return c.SendString(file)
+			}
+
+			return c.SendString(file)
+
+		})
+
+		err = app.Listen(":" + PORT)
 		if err != nil {
 			panic(err)
 		}
@@ -724,12 +837,15 @@ func onReady() {
 		for {
 			select {
 			case <-mOpenApp.ClickedCh:
-				pwd, err := os.Getwd()
+
+				exePath, err := os.Executable()
 				if err != nil {
 					log.Fatal(err)
 				}
 
-				cmd := exec.Command(filepath.Join(pwd, "gmessage"), "standalone")
+				fmt.Println("Executable path: ", exePath)
+
+				cmd := exec.Command(exePath, "standalone")
 
 				var out bytes.Buffer
 				cmd.Stdout = &out
@@ -747,9 +863,6 @@ func onReady() {
 				systray.Quit()
 				fmt.Println("Quit now...")
 				return
-				// case <-mToggle.ClickedCh:
-				// 	toggle()
-
 			}
 		}
 	}()

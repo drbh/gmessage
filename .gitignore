@@ -15,3 +15,6 @@ gmessage
 build.flag
 __pycache__
 web/build
+gmessage.app
+gmessage-tmp.dmg
+gmessage.dmg
