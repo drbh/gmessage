@@ -1,7 +1,7 @@
 export INCLUDE_PATH := $(shell pwd)/server/vendors/gpt4all-bindings/golang
 export MODEL_NAME := ggml-mpt-7b-chat.bin
 
-# .PHONY: run pnpm install backend
+.PHONY: all pnpm install compile package submodule lib check download app build
 
 run: backend frontend
 
