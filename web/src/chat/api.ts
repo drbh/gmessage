@@ -101,7 +101,7 @@ export async function updateModelConfig(modelConfig: any): Promise<any> {
 	const options = {
 		method: 'PUT',
 		headers: { 'Content-Type': 'application/json' },
-		body: modelConfig
+		body: JSON.stringify(modelConfig)
 	};
 	const response = await fetch(`${protocol}${host}:${port}/model-config`, options);
 	const json = await response.json();

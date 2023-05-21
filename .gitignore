@@ -18,3 +18,4 @@ web/build
 gmessage.app
 gmessage-tmp.dmg
 gmessage.dmg
+.svelte-kit

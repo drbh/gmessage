@@ -164,7 +164,7 @@
 		isSavingModelConfig = true;
 
 		updateModelConfig({
-			model: $modelConfig.model.value,
+			model: '.cache/gpt4all/' + $modelConfig.model.value,
 			n_threads: $modelConfig.n_threads.value
 		});
 
@@ -194,6 +194,8 @@
 
 		isSavingChatCompletionConfig = false;
 	};
+
+	console.log($modelConfig);
 </script>
 
 <!-- Start Settings Page -->
@@ -267,7 +269,12 @@
 										bind:value={$modelConfig[key].value}
 									>
 										{#each $modelConfig[key].options as option (option)}
-											<option value={option}>{option}</option>
+											<option value={option.model}
+												>{option.model}
+												{option.size / 1000000 > 1
+													? `(${option.size / 1000000}MB)`
+													: `(${option.size / 1000}KB)`}</option
+											>
 										{/each}
 									</select>
 								{/if}
