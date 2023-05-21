@@ -20,6 +20,7 @@ Contributions are more than welcome! and bugs are expected please report them [h
 - ✅ Text to speech
 - ✅ Export chat to JSON file
 - ✅ Menubar, Desktop & Web apps built-in
+- Locally running LLM server
 
 
 #### Search 
@@ -31,6 +32,38 @@ Contributions are more than welcome! and bugs are expected please report them [h
 ### Menubar
 ![openapp](./media/openapp.gif) 
 
+### From Python
+Since we respond to and return the same JSON format as the OpenAI API you can use the same python code to interact with gmessage as you would with the OpenAI API.
+```python
+import openai
+
+openai.api_key = ""
+openai.api_base = "http://localhost:10999/api"
+
+response = openai.Completion.create(
+  model="gpt4all-mpt-7b",
+  messages=[
+        {
+            "role": "system",
+            "content": "You are a helpful assistant."
+        },
+        {
+            "role": "user",
+            "content": "Hello there."
+        },
+        {
+            "role": "assistant",
+            "content": "Hi, how can I help you?"
+        },
+        {
+            "role": "user",
+            "content": "Reverse a list in Python."
+        }
+    ]
+)
+
+print(response.choices[0])
+```
 
 ### How to compile and run
 

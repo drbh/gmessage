@@ -67,8 +67,8 @@ download:
 
 # run the standalone app
 app:
-	@cd server && C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go run main.go icon.go types.go
+	@cd server && C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go run *.go
 
 # build the standalone app
 build:
-	@cd server && C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go build -o ../bin/gmessage main.go icon.go types.go
+	@cd server && C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go build -o ../bin/gmessage *.go
