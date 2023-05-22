@@ -9,14 +9,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	_ "github.com/mattn/go-sqlite3"
+	gpt4all "github.com/nomic-ai/gpt4all/gpt4all-bindings/golang"
 )
 
 var db *sql.DB
 
-var MODEL_CONFIG = ModelConfig{
-	Model:    "ggml-mpt-7b-chat.bin",
-	NThreads: 1,
-}
+var MODEL_CONFIG ModelConfig
 
 var INIT_MESSAGES = []Message{
 	Message{
@@ -56,6 +54,8 @@ const (
 	DEV_VERBOSE     = false
 	ALLOWED_ORIGINS = "http://localhost:5190, http://127.0.0.1:8080"
 )
+
+var modelPointer **gpt4all.Model
 
 // get the home directory
 var home, _ = os.UserHomeDir()

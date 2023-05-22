@@ -7,7 +7,7 @@ run: backend frontend
 
 # ⭐️ ENTRY POINT FROM README THIS RUNS ALL OF THE COMMANDS BELOW
 frontend: pnpm install compile
-backend: submodule lib check build
+backend: submodule lib build
 
 #
 # Frontend Related
@@ -42,28 +42,6 @@ submodule:
 # build the gpt4all library (use the golang bindings)
 lib:
 	@cd server/vendors/gpt4all-bindings/golang && make libgpt4all.a
-
-# Check if the model is downloaded; if not, download it
-check:
-	@if [ ! -d "$(HOME)/.cache/gpt4all" ]; then \
-		echo "Need to create $(HOME)/.cache/gpt4all"; \
-		mkdir -p "$(HOME)/.cache/gpt4all"; \
-		echo "🌈 Created $(HOME)/.cache/gpt4all"; \
-	fi
-	@if [ ! -f "$(HOME)/.cache/gpt4all/$(MODEL_NAME)" ]; then \
-		echo "Need to download from https://gpt4all.io/models/$(MODEL_NAME)"; \
-		mkdir -p "$(HOME)/.cache/gpt4all"; \
-		curl -LO https://gpt4all.io/models/$(MODEL_NAME) -o "$(HOME)/.cache/gpt4all/$(MODEL_NAME)"; \
-		echo "🌈 Downloaded"; \
-		exit 0; \
-	else \
-		echo "🌈 Already downloaded"; \
-		exit 0; \
-	fi
-
-# download the model
-download:
-	curl -LO https://gpt4all.io/models/ggml-mpt-7b-chat.bin
 
 # run the standalone app
 app:

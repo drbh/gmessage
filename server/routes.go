@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -161,6 +163,15 @@ func SetChatCompletionConfig(c *fiber.Ctx) error {
 }
 
 func GetModelConfig(c *fiber.Ctx) error {
+
+	// configMap := GetModelConfigFromDb()
+	// if configMap == nil {
+	// 	return c.Status(400).SendString("Failed to load model config from db")
+	// }
+
+	// var config ModelConfig
+	// config.Model = configMap["model"]
+
 	return c.JSON(MODEL_CONFIG)
 }
 
@@ -187,6 +198,12 @@ func SetModelConfig(c *fiber.Ctx) error {
 
 	// load the model
 	model := home + "/" + MODEL_CONFIG.Model
+
+	// if nthreads is 0 set it to 1
+	if MODEL_CONFIG.NThreads == 0 {
+		MODEL_CONFIG.NThreads = 1
+	}
+
 	l, err := gpt4all.New(model,
 		gpt4all.SetModelType(modelType),
 		gpt4all.SetThreads(MODEL_CONFIG.NThreads))
@@ -194,8 +211,19 @@ func SetModelConfig(c *fiber.Ctx) error {
 		return c.Status(400).SendString(fmt.Sprintf("Failed to load the model: %s", err.Error()))
 	}
 
-	// update the context locals
-	c.Locals("model", l)
+	modelPtr := c.Locals("modelPointer").(**gpt4all.Model)
+	*modelPtr = l
+
+	SetModelConfigToDb(
+		db,
+		// convert MODEL_CONFIG to map[string]string
+		map[string]string{
+			"model":    MODEL_CONFIG.Model,
+			"nthreads": strconv.Itoa(MODEL_CONFIG.NThreads),
+		},
+	)
+
+	fmt.Println("Model loaded successfully.")
 
 	return c.JSON(MODEL_CONFIG)
 }
@@ -323,7 +351,13 @@ func StreamCompletion(c *fiber.Ctx) error {
 
 	prompt := BuildPrompt(chatMessages, true, true)
 
-	l := c.Locals("model").(*gpt4all.Model)
+	modelPtr := c.Locals("modelPointer").(**gpt4all.Model)
+
+	fmt.Println("MODEL", modelPtr)
+
+	l := *modelPtr
+
+	fmt.Println("MODEL", l)
 
 	c.Set(fiber.HeaderContentType, "text/event-stream")
 	c.Set(fiber.HeaderCacheControl, "no-cache")
@@ -411,7 +445,10 @@ func CompletionApi(c *fiber.Ctx) error {
 	}
 
 	prompt := BuildPrompt(chatMessages, true, true)
-	l := c.Locals("model").(*gpt4all.Model)
+
+	modelPtr := c.Locals("modelPointer").(**gpt4all.Model)
+
+	l := *modelPtr
 
 	l.SetTokenCallback(func(s string) bool {
 		fmt.Print(s) // show the token
@@ -454,4 +491,65 @@ func CompletionApi(c *fiber.Ctx) error {
 
 	// send a response to the client
 	return c.JSON(response)
+}
+
+// manage models
+
+func DownloadModel(c *fiber.Ctx) error {
+	// read :model_name from the request params
+	modelName := c.Params("model_name")
+
+	modelUrl := "https://gpt4all.io/models/" + modelName
+	filePath := home + "/.cache/gpt4all/" + modelName
+
+	fmt.Println("Model to download: " + modelUrl)
+
+	c.Set(fiber.HeaderContentType, "text/event-stream")
+	c.Set(fiber.HeaderCacheControl, "no-cache")
+	c.Set(fiber.HeaderConnection, "keep-alive")
+	c.Context().Response.Header.SetCanonical([]byte("X-Accel-Buffering"), []byte("no"))
+	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+
+		DownloadFile(filePath, modelUrl, func(s string) bool {
+			// fmt.Print(s) // show output
+			fmt.Fprintf(w, "{\"progress\": \"%s\"}\r\n", s)
+			w.Flush()
+			return true
+		})
+
+		fmt.Fprintf(w, "{\"status\": \"%s\"}\r\n", "done")
+		w.Flush()
+
+		return
+	})
+
+	return nil
+
+}
+
+// remove the model (delete file from disk)
+func RemoveModel(c *fiber.Ctx) error {
+	// read :model_name from the request params
+	modelName := c.Params("model_name")
+
+	// ensure the model exists
+	if _, err := os.Stat(home + "/.cache/gpt4all/" + modelName); os.IsNotExist(err) {
+		return c.JSON("Model does not exist")
+	}
+
+	// model
+	filePath := home + "/.cache/gpt4all/" + modelName
+
+	fmt.Println("File to be removed: ", filePath)
+
+	err := os.Remove(filePath)
+
+	if err != nil {
+		panic(err)
+	}
+
+	// send a response to the client
+	return c.JSON(map[string]string{
+		"removed": modelName,
+	})
 }
