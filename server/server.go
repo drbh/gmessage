@@ -13,12 +13,10 @@ func RunServer(
 	db *sql.DB,
 ) {
 
-	var l *gpt4all.Model
-	defer l.Free()
+	modelPointer = new(*gpt4all.Model)
 
-	// set model in fiber context
 	app.Use(func(c *fiber.Ctx) error {
-		c.Locals("model", l)
+		c.Locals("modelPointer", modelPointer)
 		return c.Next()
 	})
 
@@ -28,6 +26,10 @@ func RunServer(
 	app.Put("/model-config", SetModelConfig)
 	// Route for getting supported models
 	app.Get("/supported-models", GetSupportedModels)
+	// Route for downloading a model
+	app.Post("/model/:model_name", DownloadModel)
+	// Route for removing a model
+	app.Delete("/model/:model_name", RemoveModel)
 	// Route for getting chat completion configuration
 	app.Get("/chat-completion-config", GetChatCompletionConfig)
 	// Route for updating chat completion configuration
@@ -47,14 +49,7 @@ func RunServer(
 	// route to serve our compiled frontend static files
 	app.Get("*", ServeStatic)
 
-	// set default model
-
-	model := home + "/.cache/gpt4all/ggml-mpt-7b-chat.bin"
-	l, err := gpt4all.New(model,
-		gpt4all.SetModelType(gpt4all.MPTType),
-		gpt4all.SetThreads(MODEL_CONFIG.NThreads))
-
-	err = app.Listen(":" + PORT)
+	err := app.Listen(":" + PORT)
 	if err != nil {
 		panic(err)
 	}

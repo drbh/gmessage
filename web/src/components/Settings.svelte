@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import {
 		ArrowPath,
 		ChatBubbleLeftEllipsis,
@@ -9,7 +8,9 @@
 		XCircle
 	} from 'svelte-hero-icons';
 	import { writable } from 'svelte/store';
-	import { updateModelConfig, updateChatCompletionConfig } from '../chat/api';
+	import { updateChatCompletionConfig, updateModelConfig } from '../chat/api';
+	import ModelManager from './ModelManager.svelte';
+	import allModels from '../models';
 
 	export let chatSessionId: string = '';
 	export let themes: any[] = [];
@@ -20,7 +21,6 @@
 	export let initModelConfig: any = {};
 
 	let currentSection = 'Model Config';
-	let validSections = ['Model Config', 'Chat Completion Config', 'Theme'];
 
 	// Create stores for chatCompletionConfig and modelConfig
 	const chatCompletionConfig = writable({
@@ -104,18 +104,27 @@
 	});
 
 	const modelConfig = writable({
-		model: {
-			type: 'dropdown',
-			value: 'ggml-mpt-7b-chat.bin',
-			options: supportedModels
-		},
 		n_threads: {
 			type: 'number',
 			value: 1,
 			min: 1,
 			max: 999
+		},
+		model: {
+			type: 'selector',
+			value: '',
+			options: supportedModels
 		}
 	});
+
+	const chooseModeCallback = (mod: any) => {
+		console.log('chooseModeCallback', mod);
+
+		updateModelConfig({
+			model: '.cache/gpt4all/' + mod.modelName,
+			n_threads: $modelConfig.n_threads.value
+		});
+	};
 
 	// listen for changes to supportedModels
 	$: {
@@ -147,6 +156,8 @@
 	// modelConfig
 	$: {
 		modelConfig.update((modelConfig) => {
+			console.log('initModelConfig', initModelConfig);
+
 			modelConfig.model.value = initModelConfig.model;
 			modelConfig.n_threads.value = initModelConfig.n_threads;
 			return modelConfig;
@@ -194,8 +205,6 @@
 
 		isSavingChatCompletionConfig = false;
 	};
-
-	console.log($modelConfig);
 </script>
 
 <!-- Start Settings Page -->
@@ -252,14 +261,6 @@
 								class="flex flex-col items-start"
 								on:click={() => navigateToSection('Model Config', key)}
 							>
-								<!-- <div class="text-[color:var(--font-color)] ml-1 mb-1 opacity-50">{key}</div>
-								<input
-									class="cx-settings-input w-full"
-									id="model"
-									type="text"
-									bind:value={$modelConfig[key]}
-								/> -->
-
 								<!-- if type == dropdown -->
 								{#if $modelConfig[key].type === 'dropdown'}
 									<div class="text-[color:var(--font-color)] ml-1 mb-1 opacity-50">{key}</div>
@@ -290,6 +291,10 @@
 										min={$modelConfig[key].min}
 										max={$modelConfig[key].max}
 									/>
+								{/if}
+
+								{#if $modelConfig[key].type === 'selector'}
+									<ModelManager {modelConfig} {allModels} bind:key {chooseModeCallback} />
 								{/if}
 							</div>
 						{/each}
