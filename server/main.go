@@ -88,11 +88,11 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	db := InitDb()
+	db = InitDb()
 
 	// always start server in background
 	go func() {
-		RunServer(home, app, &db)
+		RunServer(home, app)
 	}()
 
 	// always start menu app

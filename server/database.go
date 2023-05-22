@@ -5,17 +5,21 @@ import (
 	"fmt"
 )
 
-func InitDb() sql.DB {
+func InitDb() *sql.DB {
 	dbPath := home + "/" + DB
 
 	fmt.Println("Database path:", dbPath)
 
 	// connect to the database
 	var err error
-	db, err = sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		panic(err)
 	}
+
+	// Set the connection pool limits
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(25)
 
 	// create table if not exists
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS messages (
@@ -41,7 +45,7 @@ func InitDb() sql.DB {
 		panic(err)
 	}
 
-	return *db
+	return db
 }
 
 func GetModelConfigFromDb(db *sql.DB) map[string]string {

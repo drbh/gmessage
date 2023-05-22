@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -14,7 +13,6 @@ import (
 func RunServer(
 	home string,
 	app *fiber.App,
-	db *sql.DB,
 ) {
 
 	modelPointer = new(*gpt4all.Model)
