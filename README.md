@@ -22,6 +22,12 @@ Contributions are more than welcome! and bugs are expected please report them [h
 - ✅ Menubar, Desktop & Web apps built-in
 - Locally running LLM server
 
+### Menubar
+![openapp](./media/openapp.gif) 
+
+## Manage Models
+
+![modelmgmt](./media/modelmgmt.gif)
 
 #### Search 
 ![search](./media/search.gif)
@@ -29,8 +35,7 @@ Contributions are more than welcome! and bugs are expected please report them [h
 #### Themes
 ![themes](./media/themes.gif)
 
-### Menubar
-![openapp](./media/openapp.gif) 
+
 
 ### From Python
 Since we respond to and return the same JSON format as the OpenAI API you can use the same python code to interact with gmessage as you would with the OpenAI API.
