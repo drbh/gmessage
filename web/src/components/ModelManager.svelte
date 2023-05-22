@@ -30,9 +30,14 @@
 
 	$: {
 		if (searchTerm.length > 0) {
-			searchResults = allModels.filter((mod) =>
+			let results = allModels.filter((mod) =>
 				mod.modelName.toLowerCase().includes(searchTerm.toLowerCase())
 			);
+
+			// only assign if defined
+			if (results) {
+				searchResults = results;
+			}
 		} else {
 			searchResults = allModels;
 		}
@@ -62,20 +67,13 @@
 	}
 
 	async function handleModelClick(mod) {
-		console.log('Model Row Clicked', mod);
-
 		// if not downloaded open confirm dialog
 		if (
 			$modelConfig[key].options.filter((opt) => {
 				return mod.modelName == opt.model;
 			}).length === 0
 		) {
-			// await confirm
-			console.log('Should download model');
-
 			const confirmed = await confirm(`Download ${mod.modelName} (${getReadableSize(mod.size)})?`);
-
-			console.log('Confirmed', confirmed);
 			if (!confirmed) {
 				return;
 			}
@@ -126,7 +124,6 @@
 
 	async function handleModelDelete(mod) {
 		isDeletingModelName = mod.modelName;
-		console.log('Delete', mod.modelName);
 		const response = await fetch(`http://localhost:10999/model/${mod.modelName}`, {
 			method: 'DELETE'
 		});
@@ -141,7 +138,6 @@
 	}
 
 	async function handleModelChoose(mod) {
-		console.log('Choose', mod.modelName);
 		$modelConfig[key].value = mod.modelName;
 		chooseModeCallback(mod);
 	}
@@ -163,7 +159,7 @@
 >
 	<div class="flex items-end justify-center h-[50vh] pt-4 px-4 pb-20 text-center">
 		<div
-			class="fixed inset-0 bg-gray-700 bg-opacity-30 transition-opacity
+			class="fixed inset-0 bg-black bg-opacity-40 transition-opacity
 			filter blur-sm backdrop-blur-sm backdrop-filter backdrop-saturate-150
 		"
 			aria-hidden="true"
@@ -206,7 +202,7 @@
 </div>
 
 <!-- Model Selection Area -->
-<label class="block text-sm font-bold my-2" for="theme"> Select model </label>
+<!-- <label class="block text-sm font-bold my-2" for="theme"> Select model </label> -->
 
 <!-- Search models -->
 <div class="flex flex-col space-y-1 w-full mb-4">
@@ -219,7 +215,6 @@
 			class="text-sm w-full outline-none bg-[color:var(--primary-light)]"
 			on:input={async () => {
 				if (searchTerm.length === 0) {
-					seachResults = [];
 					return;
 				}
 			}}
@@ -229,7 +224,6 @@
 			<div
 				on:click={() => {
 					searchTerm = '';
-					seachResults = [];
 				}}
 				class="
 				mr-4 w-5 h-5 text-gray-700 transform translate-x-[-0.75rem]
@@ -349,7 +343,7 @@
 			</div>
 
 			<!-- Download Progress -->
-			{#if modelDownloading[mod.modelName]}
+			{#if modelDownloading[mod.modelName] && progress[mod.modelName] > 1}
 				<div class="flex items-center justify-between px-6 pt-4">
 					<div
 						class="w-full bg-[color:var(--light-transparent)]

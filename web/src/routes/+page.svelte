@@ -2,13 +2,13 @@
 	import Chat from '../components/Chat.svelte';
 	import Sidebar from '../components/Sidebar.svelte';
 
-	import { getCurrentChatSession, sendMessageToServer } from '../chat/api';
-	import { convertMessage, scrollToBottom } from '../chat/helpers';
 	import { onMount } from 'svelte';
-	import { getRecentChatSessions } from '../chat/api';
+	import { getCurrentChatSession, getRecentChatSessions } from '../chat/api';
+	import { convertMessage } from '../chat/helpers';
 	import { sinceTimestamp } from '../utils/sinceTimestamp';
 
 	let recentConversations: any[] = [];
+	let messages: any[] = [];
 
 	onMount(() => {
 		// get all recent chat sessions
@@ -22,12 +22,11 @@
 				};
 			});
 		});
-	});
 
-	let messages: any[] = [];
-	onMount(() => {
 		// check local storage for chatSessionId
 		const chatSessionIdLocal = localStorage.getItem('chatSessionId');
+
+		console.log('[Init Chat Session ID]', chatSessionIdLocal);
 
 		if (chatSessionIdLocal) {
 			const converted = getCurrentChatSession(chatSessionIdLocal).then((serverMessages) => {

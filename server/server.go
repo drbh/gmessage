@@ -2,6 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	gpt4all "github.com/nomic-ai/gpt4all/gpt4all-bindings/golang"
@@ -49,6 +53,65 @@ func RunServer(
 	// route to serve our compiled frontend static files
 	app.Get("*", ServeStatic)
 
+	// read default model configuration from database
+	modelConfig := GetModelConfigFromDb(db)
+	fmt.Println("Model configuration:", modelConfig)
+
+	// if model configuration is found in database, load the model
+	if len(modelConfig) > 0 {
+
+		// set MODEL_CONFIG global variable
+		jsonOfModelConfig := modelConfig["model_config"]
+		// parse jsonOfModelConfig to ModelConfig
+		var modelConfigModelConfig ModelConfig
+		json.Unmarshal([]byte(jsonOfModelConfig), &modelConfigModelConfig)
+		fmt.Println("Model configuration:", modelConfigModelConfig)
+
+		modelName := modelConfigModelConfig.Model
+		modelPath := home + "/" + modelName
+
+		shouldInitializeModel := true
+
+		// check if model exists
+		if _, err := os.Stat(modelPath); os.IsNotExist(err) {
+			fmt.Println("Model does not exist:", modelPath)
+
+			shouldInitializeModel = false
+		}
+
+		// if no model on disk skip loading model
+		// TODO: this step is prone to error if a user interrupts the download
+		// it may result in a malformed model and this step will panic
+		if shouldInitializeModel {
+
+			nThreads := 1 // modelConfig["n_threads"]
+			modelType := gpt4all.MPTType
+
+			fmt.Println("Model:", modelName)
+
+			if strings.Contains(modelName, "llama") {
+				modelType = gpt4all.LLaMAType
+			} else if strings.Contains(modelName, "gpt4all-j") {
+				modelType = gpt4all.GPTJType
+			} else if strings.Contains(modelName, "wizardLM") {
+				modelType = gpt4all.LLaMAType
+			}
+
+			l, err := gpt4all.New(modelPath,
+				gpt4all.SetModelType(modelType),
+				gpt4all.SetThreads(
+					// convert to int
+					int(nThreads),
+				))
+			if err != nil {
+				fmt.Println("Error loading model:", err)
+			} else {
+				fmt.Println("Model loaded:", modelPath)
+				*modelPointer = l
+			}
+		}
+	}
+	fmt.Println("Listening on port", PORT)
 	err := app.Listen(":" + PORT)
 	if err != nil {
 		panic(err)

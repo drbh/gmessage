@@ -156,8 +156,6 @@
 	// modelConfig
 	$: {
 		modelConfig.update((modelConfig) => {
-			console.log('initModelConfig', initModelConfig);
-
 			modelConfig.model.value = initModelConfig.model;
 			modelConfig.n_threads.value = initModelConfig.n_threads;
 			return modelConfig;

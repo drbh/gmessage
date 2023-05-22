@@ -7,7 +7,8 @@
 		getSupportedModels,
 		getCompletionConfig,
 		getModelConfig,
-		sendMessageToServerStream
+		sendMessageToServerStream,
+		updateModelConfig
 	} from '../chat/api';
 	import { convertMessage, scrollToBottom } from '../chat/helpers';
 	import ChatHeader from './Chat/ChatHeader.svelte';
@@ -18,6 +19,9 @@
 	import { getany } from '../routes/context';
 	import { APP_THEMES } from '../themes';
 	import Settings from './Settings.svelte';
+	import ModelManager from './ModelManager.svelte';
+	import allModels from '../models';
+	import { writable } from 'svelte/store';
 	const theme = getany();
 
 	export let chatSessionId: string = '';
@@ -33,12 +37,29 @@
 	let supportedModels: any[] = [];
 	let completionConfig: any = {};
 	let initModelConfig: any = {};
+	let forceSetInitalModelHidden = true;
+
+	let mockModelConfig = writable({
+		model: {
+			value: '',
+			options: []
+		}
+	});
 
 	onMount(() => {
 		if (!window) return;
 
 		getSupportedModels().then((models) => {
 			supportedModels = models;
+
+			console.log('[User Info] Supported models', supportedModels);
+
+			// if no models force user to select one
+			if (supportedModels.length === 0) {
+				console.log('[User Error] Do not proceed until a model is downloaded');
+
+				forceSetInitalModelHidden = false;
+			}
 		});
 
 		getCompletionConfig().then((config) => {
@@ -116,7 +137,6 @@
 
 		// if message is the first message, create a new chat session
 		if (messages.length === 0) {
-
 			// TODO: fix this
 			// if message are empty then we are in a new session
 			// and we dont know the id yet
@@ -222,3 +242,47 @@
 	bind:completionConfig
 	bind:initModelConfig
 />
+
+<div
+	id="overlay"
+	class="fixed top-0 left-0 w-full h-full bg-[#000]/80 opacity-90"
+	class:hidden={forceSetInitalModelHidden}
+/>
+<div
+	class="absolute w-[80vw] h-[80vh] top-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 bg-[color:var(--primary-light)] rounded-lg shadow-md text-white"
+	class:hidden={forceSetInitalModelHidden}
+>
+	<div class="p-8 h-[80vh] overflow-y-auto">
+		<div class="flex justify-between items-center mb-4">
+			<h1 class="text-2xl font-bold">Choose a model</h1>
+			<button
+				class="text-2xl font-bold"
+				on:click={() => {
+					// forceSetInitalModelHidden = true;
+				}}
+			>
+				&times;
+			</button>
+		</div>
+
+		<div class="text-start mb-8">
+			<p class="text-md">You must choose a model to get started.</p>
+		</div>
+
+		<ModelManager
+			modelConfig={mockModelConfig}
+			{allModels}
+			key={'model'}
+			chooseModeCallback={async (mod) => {
+				console.log('Setting Init Model', mod);
+
+				await updateModelConfig({
+					model: '.cache/gpt4all/' + mod.modelName,
+					n_threads: 1
+				});
+
+				forceSetInitalModelHidden = true;
+			}}
+		/>
+	</div>
+</div>

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -162,6 +163,15 @@ func SetChatCompletionConfig(c *fiber.Ctx) error {
 }
 
 func GetModelConfig(c *fiber.Ctx) error {
+
+	// configMap := GetModelConfigFromDb()
+	// if configMap == nil {
+	// 	return c.Status(400).SendString("Failed to load model config from db")
+	// }
+
+	// var config ModelConfig
+	// config.Model = configMap["model"]
+
 	return c.JSON(MODEL_CONFIG)
 }
 
@@ -203,6 +213,15 @@ func SetModelConfig(c *fiber.Ctx) error {
 
 	modelPtr := c.Locals("modelPointer").(**gpt4all.Model)
 	*modelPtr = l
+
+	SetModelConfigToDb(
+		db,
+		// convert MODEL_CONFIG to map[string]string
+		map[string]string{
+			"model":    MODEL_CONFIG.Model,
+			"nthreads": strconv.Itoa(MODEL_CONFIG.NThreads),
+		},
+	)
 
 	fmt.Println("Model loaded successfully.")
 
