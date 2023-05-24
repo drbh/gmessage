@@ -70,9 +70,16 @@ response = openai.Completion.create(
 print(response.choices[0])
 ```
 
-### How to compile and run
+### Run on your computer
 
 ```bash
 make
 bin/gmessage
+```
+
+### Run in Docker
+
+```bash
+docker build -t gmessage .
+docker run -p 10999:10999 gmessage
 ```

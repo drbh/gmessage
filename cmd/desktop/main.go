@@ -9,7 +9,24 @@ import (
 
 	"github.com/getlantern/systray"
 	"github.com/skratchdot/open-golang/open"
+	"github.com/webview/webview"
 )
+
+const (
+	PORT = "10999"
+)
+
+// Desktop app
+func Standalone() {
+	w := webview.New(false)
+	defer w.Destroy()
+	w.SetTitle("gmessage")
+	w.SetSize(1080, 820, webview.HintNone)
+	w.Navigate(
+		"http://" + "localhost" + ":" + PORT + "/",
+	)
+	w.Run()
+}
 
 func OnExit() {
 	fmt.Println("Exited")
@@ -65,4 +82,15 @@ func OnReady() {
 			}
 		}
 	}()
+}
+
+func main() {
+
+	if len(os.Args) > 1 {
+		fmt.Println("Opening browser", os.Args[1])
+		Standalone()
+		return
+	}
+
+	systray.Run(OnReady, OnExit)
 }

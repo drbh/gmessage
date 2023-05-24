@@ -233,7 +233,7 @@ Catch all for static files
 */
 func ServeStatic(c *fiber.Ctx) error {
 
-	box := packr.New("StaticFiles", "../web/build")
+	box := packr.New("StaticFiles", "../../web/build")
 
 	if DEV_VERBOSE {
 		fmt.Println("Sever binary contains the following UI files:")

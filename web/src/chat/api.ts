@@ -13,7 +13,51 @@ if (typeof window !== 'undefined') {
 	host = window.location.hostname;
 }
 
+let baseUrl = `${protocol}${host}:${port}`;
+
+// if protocol is https then ignore the port
+if (protocol === 'https://') {
+	baseUrl = `${protocol}${host}`;
+}
+
 const extractJson = (data: string) => JSON.parse(JSON.parse(data)[0]);
+
+export async function downloadModel(modelName: string, callback: any): Promise<any> {
+	const response = await fetch(`${baseUrl}/model/${modelName}`, {
+		method: 'POST'
+	});
+
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder('utf-8');
+
+	let done = false;
+	while (!done) {
+		const { value, done: readerDone } = await reader.read();
+		done = readerDone;
+		if (value) {
+			const chunk = decoder.decode(value);
+
+			try {
+				const parsed = JSON.parse(chunk);
+				// if progress in parsed then set progress
+				if (parsed.progress) {
+					callback(parsed.progress);
+				}
+			} catch (err) {
+				console.log(err);
+			}
+		}
+	}
+}
+
+export async function removeModel(modelName: string): Promise<string> {
+	const response = await fetch(`${baseUrl}/model/${modelName}`, {
+		method: 'DELETE'
+	});
+	const body = await response.json();
+
+	return body;
+}
 
 export async function sendMessageToServer(
 	userMessage: string,
@@ -24,7 +68,7 @@ export async function sendMessageToServer(
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ chat_id: Number(chatSessionId), message: userMessage })
 	};
-	const response = await fetch(`${protocol}${host}:${port}/message`, options);
+	const response = await fetch(`${baseUrl}/message`, options);
 	const json = await response.json();
 	console.log('json', json);
 	if (json.messages) return json.messages;
@@ -42,7 +86,7 @@ export async function sendMessageToServerStream(
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ chat_id: Number(chatSessionId), message: userMessage })
 	};
-	const response = await fetch(`${protocol}${host}:${port}/stream`, options);
+	const response = await fetch(`${baseUrl}/stream`, options);
 	const reader = response.body.getReader();
 	const decoder = new TextDecoder('utf-8');
 
@@ -65,14 +109,14 @@ export async function sendMessageToServerStream(
 
 export async function getCurrentChatSession(chatSessionId: string): Promise<ServerMessage[]> {
 	const options = { method: 'GET' };
-	const response = await fetch(`${protocol}${host}:${port}/messages/${chatSessionId}`, options);
+	const response = await fetch(`${baseUrl}/messages/${chatSessionId}`, options);
 	const json = await response.json();
 	return json;
 }
 
 export async function getRecentChatSessions(): Promise<ServerMessage[]> {
 	const options = { method: 'GET' };
-	const response = await fetch(`${protocol}${host}:${port}/chats`, options);
+	const response = await fetch(`${baseUrl}/chats`, options);
 	const jsonData = await response.json();
 	jsonData.sort((a: any, b: any) => {
 		return new Date(b.timestamp) - new Date(a.timestamp);
@@ -82,7 +126,7 @@ export async function getRecentChatSessions(): Promise<ServerMessage[]> {
 
 export async function searchConversations(searchText: string): Promise<ServerMessage[]> {
 	const options = { method: 'GET' };
-	const response = await fetch(`${protocol}${host}:${port}/search/${searchText}`, options);
+	const response = await fetch(`${baseUrl}/search/${searchText}`, options);
 	const jsonData = await response.json();
 	jsonData.sort((a: any, b: any) => {
 		return new Date(b.timestamp) - new Date(a.timestamp);
@@ -92,7 +136,7 @@ export async function searchConversations(searchText: string): Promise<ServerMes
 
 export async function getSupportedModels(): Promise<any> {
 	const options = { method: 'GET' };
-	const response = await fetch(`${protocol}${host}:${port}/supported-models`, options);
+	const response = await fetch(`${baseUrl}/supported-models`, options);
 	const json = await response.json();
 	return json || [];
 }
@@ -103,7 +147,7 @@ export async function updateModelConfig(modelConfig: any): Promise<any> {
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(modelConfig)
 	};
-	const response = await fetch(`${protocol}${host}:${port}/model-config`, options);
+	const response = await fetch(`${baseUrl}/model-config`, options);
 	const json = await response.json();
 	return json;
 }
@@ -114,21 +158,21 @@ export async function updateChatCompletionConfig(chatCompletionConfig: any): Pro
 		headers: { 'Content-Type': 'application/json' },
 		body: chatCompletionConfig
 	};
-	const response = await fetch(`${protocol}${host}:${port}/chat-completion-config`, options);
+	const response = await fetch(`${baseUrl}/chat-completion-config`, options);
 	const json = await response.json();
 	return json;
 }
 
 export async function getCompletionConfig(): Promise<any> {
 	const options = { method: 'GET' };
-	const response = await fetch(`${protocol}${host}:${port}/chat-completion-config`, options);
+	const response = await fetch(`${baseUrl}/chat-completion-config`, options);
 	const json = await response.json();
 	return json || [];
 }
 
 export async function getModelConfig(): Promise<any> {
 	const options = { method: 'GET' };
-	const response = await fetch(`${protocol}${host}:${port}/model-config`, options);
+	const response = await fetch(`${baseUrl}/model-config`, options);
 	const json = await response.json();
 	return json || [];
 }
@@ -137,10 +181,7 @@ export async function forkConversationAtMessage(
 	messageId: string
 ): Promise<{ chatSessionId: string; timelineId: string; messages: ServerMessage[] }> {
 	const options = { method: 'POST' };
-	const response = await fetch(
-		`${protocol}${host}:${port}/fork-conversation/${messageId}`,
-		options
-	);
+	const response = await fetch(`${baseUrl}/fork-conversation/${messageId}`, options);
 	const json = await response.json();
 	return json;
 }
@@ -150,10 +191,7 @@ export async function rerunModelFromMessage(
 	messageId: string
 ): Promise<{ chatSessionId: string; timelineId: string; messages: ServerMessage[] }> {
 	const options = { method: 'POST' };
-	const response = await fetch(
-		`${protocol}${host}:${port}/rerun-conversation/${messageId}`,
-		options
-	);
+	const response = await fetch(`${baseUrl}/rerun-conversation/${messageId}`, options);
 	const json = await response.json();
 	return json;
 }

@@ -11,6 +11,7 @@ vite.config.ts.timestamp-*
 *.db
 *.pyc
 gmessage
+gmessage-gui
 *.bin
 build.flag
 __pycache__
@@ -19,3 +20,5 @@ gmessage.app
 gmessage-tmp.dmg
 gmessage.dmg
 .svelte-kit
+cmd/server/packrd
+main-packr.go

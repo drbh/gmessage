@@ -1,9 +1,11 @@
-export INCLUDE_PATH := $(shell pwd)/server/vendors/gpt4all-bindings/golang
+export INCLUDE_PATH := $(shell pwd)/cmd/server/vendors/gpt4all-bindings/golang
 export MODEL_NAME := ggml-mpt-7b-chat.bin
 
 .PHONY: all pnpm install compile package submodule lib check download app build
 
-run: backend frontend
+run: frontend backend gui
+
+server: frontend backend
 
 # ⭐️ ENTRY POINT FROM README THIS RUNS ALL OF THE COMMANDS BELOW
 frontend: pnpm install compile
@@ -19,7 +21,7 @@ pnpm:
 	fi
 
 install: pnpm
-	cd web && pnpm install
+	cd web && pnpm install --force
 
 compile: build.flag
 
@@ -41,12 +43,16 @@ submodule:
 
 # build the gpt4all library (use the golang bindings)
 lib:
-	@cd server/vendors/gpt4all-bindings/golang && make libgpt4all.a
+	@cd cmd/server/vendors/gpt4all-bindings/golang && make libgpt4all.a
 
 # run the standalone app
 app:
-	@cd server && C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go run *.go
+	@cd cmd/server && packr2 && C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go run *.go
+
+# build the core server
+build:
+	@cd cmd/server && packr2 && C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go build -o ../../bin/gmessage *.go
 
 # build the standalone app
-build:
-	@cd server && C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go build -o ../bin/gmessage *.go
+gui:
+	@cd cmd/desktop && C_INCLUDE_PATH=$(INCLUDE_PATH) LIBRARY_PATH=$(INCLUDE_PATH) go build -o ../../bin/gmessage-gui *.go

@@ -1,0 +1,12 @@
+cmd/*/vendors/**/*
+cmd/*/vendors/*
+cmd/*/vendors
+cmd/server/packrd
+web/node_modules
+web/build
+web/.svelte-kit
+gmessage.app
+bin
+build.flag
+gmessage-gui
+gmessage

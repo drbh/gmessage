@@ -5,8 +5,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-
-	"github.com/webview/webview"
 )
 
 func BuildPrompt(messages []ChatMessage, defaultPromptHeader bool, defaultPromptFooter bool) string {
@@ -49,18 +47,6 @@ func BuildPrompt(messages []ChatMessage, defaultPromptHeader bool, defaultPrompt
 	}
 
 	return fullPrompt
-}
-
-// Desktop app
-func Standalone() {
-	w := webview.New(false)
-	defer w.Destroy()
-	w.SetTitle("gmessage")
-	w.SetSize(1080, 820, webview.HintNone)
-	w.Navigate(
-		"http://" + "localhost" + ":" + PORT + "/",
-	)
-	w.Run()
 }
 
 // DownloadFile will download a url to a local file.

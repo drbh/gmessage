@@ -3,9 +3,11 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
+	"os/exec"
+	"strings"
 
-	"github.com/getlantern/systray"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	_ "github.com/mattn/go-sqlite3"
@@ -63,6 +65,7 @@ var home, _ = os.UserHomeDir()
 func SystemStartup() {
 	// make sure that .cache/gmessage exists
 	os.MkdirAll(home+"/.cache/gmessage", os.ModePerm)
+	os.MkdirAll(home+"/.cache/gpt4all", os.ModePerm)
 }
 
 // struct for model information
@@ -73,12 +76,44 @@ type ModelInfo struct {
 }
 
 func main() {
+	// check if the gui binary exists
+	exePath, err := os.Executable()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	exePath += "-gui"
+
+	// exit app channel
+	exitApp := make(chan bool)
+
+	// Run the gui binary (menu and desktop apps)
+	go func() {
+
+		// check if execPath exists
+		if _, err := os.Stat(exePath); os.IsNotExist(err) {
+			fmt.Println("GUI binary not found, skipping...")
+			return
+		}
+
+		cmd := exec.Command(exePath)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(strings.TrimSpace(string(output)))
+
+		// exit the program (outside of the goroutine)
+		exitApp <- true
+	}()
+
 	// ensure folders are created
 	SystemStartup()
 
 	if len(os.Args) > 1 {
 		fmt.Println("Opening browser", os.Args[1])
-		Standalone()
+		// Standalone()
 		return
 	}
 
@@ -90,13 +125,11 @@ func main() {
 
 	db = InitDb()
 
-	// always start server in background
 	go func() {
 		RunServer(home, app)
 	}()
 
-	// always start menu app
-	systray.Run(OnReady, OnExit)
+	<-exitApp
 
 	app.Shutdown()
 

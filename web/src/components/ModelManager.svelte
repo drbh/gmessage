@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ArrowPath, CheckCircle, Icon, MagnifyingGlass, XCircle } from 'svelte-hero-icons';
 	import { writable } from 'svelte/store';
+	import { downloadModel, removeModel } from '../chat/api';
 
 	let searchTerm = '';
 	let searchResults: any[] = [];
@@ -80,31 +81,9 @@
 
 			modelDownloading[mod.modelName] = true; // Start tracking this download
 
-			const response = await fetch('http://localhost:10999/model/' + mod.modelName, {
-				method: 'POST'
+			await downloadModel(mod.modelName, (prog) => {
+				progress[mod.modelName] = prog;
 			});
-
-			const reader = response.body.getReader();
-			const decoder = new TextDecoder('utf-8');
-
-			let done = false;
-			while (!done) {
-				const { value, done: readerDone } = await reader.read();
-				done = readerDone;
-				if (value) {
-					const chunk = decoder.decode(value);
-
-					try {
-						const parsed = JSON.parse(chunk);
-						// if progress in parsed then set progress
-						if (parsed.progress) {
-							progress[mod.modelName] = parsed.progress;
-						}
-					} catch (err) {
-						console.log(err);
-					}
-				}
-			}
 
 			modelConfig.update((modelConfig) => {
 				modelConfig[key].options = [
@@ -124,10 +103,7 @@
 
 	async function handleModelDelete(mod) {
 		isDeletingModelName = mod.modelName;
-		const response = await fetch(`http://localhost:10999/model/${mod.modelName}`, {
-			method: 'DELETE'
-		});
-		const body = await response.json();
+		const body = await removeModel(mod.modelName);
 
 		// remove from modelConfig.options
 		$modelConfig[key].options = $modelConfig[key].options.filter((opt) => {
