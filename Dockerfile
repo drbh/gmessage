@@ -37,22 +37,19 @@ COPY . /app
 WORKDIR /app
 
 # Build your application without gui
-RUN make server
+RUN git config --global --add safe.directory /app \
+    && make server
 
-# Start a new stage for running the application
-FROM golang:1.20.4-alpine as runner
+# Start a new stage from scratch
+FROM scratch AS runner
 
-# Install necessary libraries
-RUN apk --no-cache add libstdc++ libgcc
+# Copy the necessary libraries from the builder stage
+COPY --from=builder /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1
+COPY --from=builder /usr/lib/libstdc++.so.6 /usr/lib/libstdc++.so.6
+COPY --from=builder /usr/lib/libgcc_s.so.1 /usr/lib/libgcc_s.so.1
 
-# Create necessary directories
-RUN mkdir -p /app/bin
-
-# Copy only the built application and necessary runtime dependencies from the builder stage
-COPY --from=builder /app/bin/gmessage /app/bin/gmessage
-
-# Expose the port your application runs on
-EXPOSE 10999
+# Copy the built application from the builder stage
+COPY --from=builder /app/bin/gmessage /gmessage
 
 # Run the binary
-CMD ["/app/bin/gmessage"]
+ENTRYPOINT ["/gmessage"]
