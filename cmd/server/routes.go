@@ -61,6 +61,15 @@ func GetMessages(c *fiber.Ctx) error {
  * Models
  */
 func GetSupportedModels(c *fiber.Ctx) error {
+	// check if TEST_ENV is set to true and if so we don't download the model
+	if os.Getenv("TEST_ENV") == "true" {
+		return c.JSON(
+			[]string{
+				"jokept",
+			},
+		)
+	}
+
 	files, err := ReadFilesInDirectory(home + "/.cache/gpt4all")
 	if err != nil {
 		return SendErrorResponse(c, 400, fmt.Sprintf("Failed to read models: %s", err.Error()))
@@ -161,6 +170,15 @@ func SetChatCompletionConfig(c *fiber.Ctx) error {
 }
 
 func GetModelConfig(c *fiber.Ctx) error {
+	// if we are in our TEST_ENV then we will auto set the model
+	if os.Getenv("TEST_ENV") == "true" {
+		// set the model
+		return c.JSON(fiber.Map{
+			"model":    "jokept",
+			"nthreads": strconv.Itoa(MODEL_CONFIG.NThreads),
+		})
+	}
+
 	return c.JSON(MODEL_CONFIG)
 }
 
@@ -249,7 +267,6 @@ func StreamCompletion(c *fiber.Ctx) error {
 		},
 	}
 
-	fmt.Println("ChatID", input.ChatID)
 	// TODO: fix this hacky type conversion by cleaning up the
 	// types in the database queries
 	chatIdString := strconv.FormatInt(int64(input.ChatID), 10)

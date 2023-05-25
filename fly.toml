@@ -13,6 +13,8 @@ kill_timeout = "5s"
 
 [env]
   PRIMARY_REGION = "bos"
+  # uncomment to avoid real models and use mock models
+  # TEST_ENV = "true"
 
 [[services]]
   protocol = "tcp"

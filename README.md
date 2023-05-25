@@ -1,4 +1,4 @@
-![GMESSAGE](./media/logo.png)
+![GMESSAGE](./media/logo-blue.png)
 
 Chatbotting made beautiful with gmessage - a visual treat for local conversations.
 
@@ -18,7 +18,16 @@ docker run -p 10999:10999 drbh/gmessage:v0.0.0
 
 **This method will run the server and allow you to interact with it via the web app. This deployment is similar to the cloud deployment since it skips the desktop app and only runs the server and web app.
 
-[See more ways to run below](#ways-to-run)
+[Other ways to run below](#ways-to-run)
+
+## 🚙 Test Drive
+
+
+<a href="https://gmessage.xyz/">
+<img src="./media/go-to-app-button.png" width="300">
+</a>
+
+Try out the app without installing anything by visiting [gmessage.xyz](https://gmessage.xyz/). NOTE, this example mindlessly returns a one liner joke no matter what you say to it becuase running the full model on fast servers is expensive. If you want to try out the full model locally you can follow the instructions below.
 
 ### Features
 
@@ -111,8 +120,7 @@ docker run -p 10999:10999 gmessage
 Fly.io provides an easy way to deploy containerized apps to the cloud. Below are a few steps that result in a running gmessage app on the cloud.
 
 ```bash
-flyctl init
-flyctl deploy
+flyctl launch # flyctl deploy (after you've created an app)
 
 fly scale vm shared-cpu-4x
 fly scale memory 8192
