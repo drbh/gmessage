@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/gobuffalo/packr/v2"
 	"github.com/gofiber/fiber/v2"
 	gpt4all "github.com/nomic-ai/gpt4all/gpt4all-bindings/golang"
 )
@@ -196,11 +198,34 @@ func FileContentTypeMapping(c *fiber.Ctx, file string) error {
 	return c.SendString(file)
 }
 
+// GetRandomLine returns a random line from a file
+func GetRandomLine(file string) string {
+	lines := strings.Split(file, "\n")
+	rand.Seed(time.Now().UnixNano())
+	randomIndex := rand.Intn(len(lines))
+	return lines[randomIndex]
+}
+
+// GetRandomSentenceFromFile returns a random sentence from a file
+func GetRandomSentenceFromDefaultFile() (string, error) {
+	box := packr.New("DefaultFiles", "./default")
+	file, err := box.FindString("file.txt")
+	if err != nil {
+
+		return "", err
+	}
+	return GetRandomLine(file), nil
+}
+
 // PredictModelResponse predicts a response from a model
 func PredictModelResponse(model *gpt4all.Model, prompt string, config ChatCompletionConfig, w *bufio.Writer) (string, error) {
 	// send a static message if in test mode
 	if os.Getenv("TEST_ENV") == "true" {
-		staticMessage := `Hello, this is a test message.`
+		staticMessage, err := GetRandomSentenceFromDefaultFile()
+		if err != nil {
+			return "", err
+		}
+
 		// send the static message in chunks
 		for _, char := range staticMessage {
 			fmt.Fprintf(w, "{\"text\": \"%s\"}\r\n", string(char))

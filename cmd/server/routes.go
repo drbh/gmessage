@@ -105,7 +105,6 @@ func DownloadModel(c *fiber.Ctx) error {
 
 // remove the model (delete file from disk)
 func RemoveModel(c *fiber.Ctx) error {
-
 	// check if TEST_ENV is set to true and if so we don't remove the model
 	if os.Getenv("TEST_ENV") == "true" {
 		return c.JSON(fiber.Map{
@@ -142,18 +141,16 @@ func RemoveModel(c *fiber.Ctx) error {
  * Configurations
  */
 func GetChatCompletionConfig(c *fiber.Ctx) error {
-	fmt.Println("GetChatCompletionConfig", os.Getenv("TEST_ENV"))
-	// check if TEST_ENV is set to true and if so we don't download the model
+	return c.JSON(CHAT_COMPLETION_CONFIG)
+}
+
+func SetChatCompletionConfig(c *fiber.Ctx) error {
 	if os.Getenv("TEST_ENV") == "true" {
 		return c.JSON(fiber.Map{
 			"message": "TEST_ENV is set to true, not using a real model.",
 		})
 	}
 
-	return c.JSON(CHAT_COMPLETION_CONFIG)
-}
-
-func SetChatCompletionConfig(c *fiber.Ctx) error {
 	var config ChatCompletionConfig
 	err := UnmarshalRequestBody(c, &config)
 	if err != nil {
@@ -164,18 +161,16 @@ func SetChatCompletionConfig(c *fiber.Ctx) error {
 }
 
 func GetModelConfig(c *fiber.Ctx) error {
-	fmt.Println("GetChatCompletionConfig", os.Getenv("TEST_ENV"))
-	// check if TEST_ENV is set to true and if so we don't download the model
+	return c.JSON(MODEL_CONFIG)
+}
+
+func SetModelConfig(c *fiber.Ctx) error {
 	if os.Getenv("TEST_ENV") == "true" {
 		return c.JSON(fiber.Map{
 			"message": "TEST_ENV is set to true, not using a real model.",
 		})
 	}
 
-	return c.JSON(MODEL_CONFIG)
-}
-
-func SetModelConfig(c *fiber.Ctx) error {
 	var config ModelConfig
 	err := UnmarshalRequestBody(c, &config)
 	if err != nil {
