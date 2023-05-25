@@ -76,3 +76,12 @@ type Choice struct {
 	FinishReason string      `json:"finish_reason"`
 	Index        int         `json:"index"`
 }
+
+type Chat struct {
+	ID               int       `json:"id"`
+	Role             string    `json:"role"`
+	Content          string    `json:"content"`
+	ChatID           string    `json:"chat_id"`
+	RequestTimestamp time.Time `json:"request_timestamp"`
+	Timestamp        time.Time `json:"timestamp"`
+}

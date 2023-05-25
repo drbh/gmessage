@@ -6,7 +6,7 @@ import (
 )
 
 func InitDb() *sql.DB {
-	dbPath := home + "/" + DB
+	dbPath := home + "/" + DB_PATH
 
 	fmt.Println("Database path:", dbPath)
 

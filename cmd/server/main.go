@@ -14,7 +14,12 @@ import (
 	gpt4all "github.com/nomic-ai/gpt4all/gpt4all-bindings/golang"
 )
 
-var db *sql.DB
+var db *DB
+
+// DB represents the SQL implementation of the Datastore
+type DB struct {
+	*sql.DB
+}
 
 var MODEL_CONFIG ModelConfig
 
@@ -51,7 +56,7 @@ var CHAT_COMPLETION_CONFIG = ChatCompletionConfig{
 
 const (
 	PORT            = "10999"
-	DB              = ".cache/gmessage/database.db"
+	DB_PATH         = ".cache/gmessage/database.db"
 	MODEL           = ".cache/gpt4all/ggml-mpt-7b-chat.bin"
 	DEV_VERBOSE     = false
 	ALLOWED_ORIGINS = "http://localhost:5190, http://127.0.0.1:8080"
@@ -123,11 +128,19 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	db = InitDb()
+	rawDb := InitDb()
+
+	db = &DB{rawDb}
 
 	go func() {
 		RunServer(home, app)
 	}()
+
+	// if we are in our TEST_ENV then we will auto set the model
+	if os.Getenv("TEST_ENV") == "true" {
+		// set the model
+		fmt.Println("Setting model to", MODEL)
+	}
 
 	<-exitApp
 

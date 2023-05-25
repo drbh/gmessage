@@ -52,7 +52,7 @@ func RunServer(
 	app.Get("*", ServeStatic)
 
 	// read default model configuration from database
-	modelConfig := GetModelConfigFromDb(db)
+	modelConfig := GetModelConfigFromDb(db.DB)
 	fmt.Println("Model configuration:", modelConfig)
 
 	// if model configuration is found in database, load the model
